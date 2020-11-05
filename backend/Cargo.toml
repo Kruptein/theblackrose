@@ -1,0 +1,12 @@
+[package]
+name = "theblackrose-backend"
+version = "0.1.0"
+authors = ["Darragh Van Tichelen <info@darragh.dev>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "3.2.0"
+riven = "1.10.2"
+tokio = { version = "0.2", features = ["full"] }
