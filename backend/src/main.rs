@@ -2,6 +2,7 @@ mod rito;
 extern crate tokio;
 
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use dotenv::dotenv;
 use riven::RiotApi;
 
 struct AppState {
@@ -16,6 +17,8 @@ async fn get_masteries(data: web::Data<AppState>, path: web::Path<String>) -> im
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
+    dotenv().ok();
+
     let local = tokio::task::LocalSet::new();
     let sys = actix_web::rt::System::run_in_tokio("server", &local);
 

@@ -1,7 +1,8 @@
 use riven::{consts::Region, RiotApi};
+use std::env;
 
 pub fn create_riot_api() -> RiotApi {
-    let api_key = std::env!("RGAPI_KEY");
+    let api_key = env::var("RGAPI_KEY").expect("RGAPI_KEY is not set as an environment variable!");
     RiotApi::with_key(api_key)
 }
 
