@@ -1,11 +1,27 @@
+mod db;
+mod errors;
+mod handlers;
+mod models;
 mod rito;
-extern crate tokio;
+mod routes;
+mod schema;
 
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+#[macro_use]
+extern crate diesel;
+#[macro_use]
+extern crate serde;
+
+use crate::routes::users;
+
+// use self::model::*;
+use actix_web::{App, HttpServer, dev::ServiceRequest, middleware};
+use db::{establish_pool, Pool};
+// use diesel::prelude::*;
 use dotenv::dotenv;
 use riven::RiotApi;
 
-struct AppState {
+pub struct AppState {
+    db_conn: Pool,
     riot_api: RiotApi,
 }
 
@@ -22,12 +38,20 @@ async fn main() -> std::io::Result<()> {
     let local = tokio::task::LocalSet::new();
     let sys = actix_web::rt::System::run_in_tokio("server", &local);
 
-    let server = HttpServer::new(|| {
+    let pool = establish_pool();
+
+    let server = HttpServer::new(move || {
         App::new()
             .data(AppState {
                 riot_api: rito::create_riot_api(),
+                db_conn: pool.clone(),
             })
-            .service(get_masteries)
+            .wrap(middleware::Logger::default())
+            .service(users::get_users)
+            .service(users::add_user)
+            .service(users::delete_user)
+            .service(users::get_user_by_id)
+            .service(users::get_masteries)
     })
     .bind("0.0.0.0:9000")?
     .run()
