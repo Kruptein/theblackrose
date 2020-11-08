@@ -15,7 +15,7 @@ extern crate serde;
 use crate::routes::users;
 
 // use self::model::*;
-use actix_web::{dev::ServiceRequest, middleware, App, Error, HttpServer};
+use actix_cors::Cors;
 use actix_web_httpauth::{
     extractors::{
         bearer::{BearerAuth, Config},
@@ -67,7 +67,7 @@ async fn main() -> std::io::Result<()> {
                 db_conn: pool.clone(),
             })
             .wrap(auth)
-            .wrap(middleware::Logger::default())
+            .wrap(Cors::permissive())
             .service(users::get_users)
             .service(users::add_user)
             .service(users::delete_user)
