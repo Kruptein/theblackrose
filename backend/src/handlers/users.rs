@@ -1,40 +1,35 @@
 use actix_web::web;
-use diesel::{delete, insert_into, result::Error, QueryDsl, RunQueryDsl};
+use diesel::{insert_into, prelude::*, result::Error, QueryDsl, RunQueryDsl};
 
 use crate::{
-    models::{InputUser, NewUser, User},
-    schema::users::dsl::users,
-    AppState,
+    auth::auth0::{get_user_info, UserInfo},
+    db::Pool,
+    models::NewUser,
+    schema::users::dsl::*,
 };
+use crate::{db::Conn, models::User, schema::users::dsl::users};
 
-pub fn get_all_users(state: web::Data<AppState>) -> Result<Vec<User>, Error> {
-    let conn = state.db_conn.get().unwrap();
-    users.load::<User>(&conn)
+fn get_user_by_subj(conn: Conn, subject: String) -> Result<User, Error> {
+    users.filter(auth0_subject.eq(subject)).get_result(&conn)
 }
 
-pub fn get_user_by_id(state: web::Data<AppState>, user_id: web::Path<i32>) -> Result<User, Error> {
-    let conn = state.db_conn.get().unwrap();
-    users.find(user_id.0).get_result::<User>(&conn)
-}
-
-pub fn add_user(state: web::Data<AppState>, item: web::Json<InputUser>) -> Result<User, Error> {
-    let conn = state.db_conn.get().unwrap();
+fn add_user(conn: Conn, user: &UserInfo) -> Result<usize, Error> {
     let new_user = NewUser {
-        username: &item.username,
-        email: &item.email,
+        email: user.email.as_str(),
+        auth0_subject: user.sub.as_str(),
         created_at: chrono::Local::now().naive_local(),
     };
-    insert_into(users)
-        .values(&new_user)
-        .get_result::<User>(&conn)
+    insert_into(users).values(&new_user).execute(&conn)
 }
 
-pub fn delete_user(state: web::Data<AppState>, user_id: web::Path<i32>) -> Result<usize, Error> {
-    let conn = state.db_conn.get().unwrap();
-    delete(users.find(user_id.0)).execute(&conn)
-}
-
-pub fn get_user_by_subj(state: &AppState, subject: String) -> Result<User, Error> {
-    let conn = state.db_conn.get().unwrap();
-    users.find(0).get_result::<User>(&conn)
+// todo: check if we want to run this in a task
+pub async fn register_subject(db_pool: Pool, token: &str, subject: String) {
+    let db_conn = db_pool.clone().get().unwrap();
+    let subj_clone = subject.clone();
+    if let Err(_) = web::block(move || get_user_by_subj(db_conn, subj_clone)).await {
+        let data = get_user_info(token).await.unwrap();
+        add_user(db_pool.get().unwrap(), &data).unwrap();
+        println!("Added user with email {}", data.email);
+    };
+    println!("Welcome user with subject {}", subject);
 }
