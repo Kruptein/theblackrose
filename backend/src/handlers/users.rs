@@ -33,3 +33,8 @@ pub fn delete_user(state: web::Data<AppState>, user_id: web::Path<i32>) -> Resul
     let conn = state.db_conn.get().unwrap();
     delete(users.find(user_id.0)).execute(&conn)
 }
+
+pub fn get_user_by_subj(state: &AppState, subject: String) -> Result<User, Error> {
+    let conn = state.db_conn.get().unwrap();
+    users.find(0).get_result::<User>(&conn)
+}

@@ -39,7 +39,8 @@ async fn validator(req: ServiceRequest, credentials: BearerAuth) -> Result<Servi
         .app_data::<Config>()
         .map(|data| data.clone())
         .unwrap_or_else(|| Default::default());
-    match auth::validate_token(credentials.token()).await {
+
+    match auth::validate_token(req.app_data().unwrap(), credentials.token()).await {
         Ok(res) => {
             if res == true {
                 Ok(req)

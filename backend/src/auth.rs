@@ -2,7 +2,7 @@ use std::error::Error;
 
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 
-use crate::errors::ServiceError;
+use crate::{db::register_subject, errors::ServiceError, AppState};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Claims {
@@ -36,7 +36,7 @@ impl Jwks {
     }
 }
 
-pub async fn validate_token(token: &str) -> Result<bool, ServiceError> {
+pub async fn validate_token(state: &AppState, token: &str) -> Result<bool, ServiceError> {
     let authority = std::env::var("AUTHORITY").expect("AUTHORITY must be set");
     let audience = std::env::var("AUDIENCE").expect("AUDIENCE must be set");
 
@@ -62,7 +62,10 @@ pub async fn validate_token(token: &str) -> Result<bool, ServiceError> {
         &DecodingKey::from_rsa_components(jwk.n.as_str(), jwk.e.as_str()),
         &validation,
     ) {
-        Ok(_) => Ok(true),
+        Ok(token_data) => {
+            register_subject(state, token, token_data.claims.sub).await;
+            Ok(true)
+        }
         Err(err) => Err(ServiceError::JWKSFetchError(err.to_string())),
     }
 }
