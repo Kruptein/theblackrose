@@ -1,3 +1,4 @@
+mod auth;
 mod db;
 mod errors;
 mod handlers;
@@ -14,7 +15,14 @@ extern crate serde;
 use crate::routes::users;
 
 // use self::model::*;
-use actix_web::{App, HttpServer, dev::ServiceRequest, middleware};
+use actix_web::{dev::ServiceRequest, middleware, App, Error, HttpServer};
+use actix_web_httpauth::{
+    extractors::{
+        bearer::{BearerAuth, Config},
+        AuthenticationError,
+    },
+    middleware::HttpAuthentication,
+};
 use db::{establish_pool, Pool};
 // use diesel::prelude::*;
 use dotenv::dotenv;
@@ -25,10 +33,21 @@ pub struct AppState {
     riot_api: RiotApi,
 }
 
-#[get("/api/v1/mastery/{username}")]
-async fn get_masteries(data: web::Data<AppState>, path: web::Path<String>) -> impl Responder {
-    let masteries = rito::get_masteries(&data.riot_api, path.0).await;
-    HttpResponse::Ok().body(masteries.to_string())
+async fn validator(req: ServiceRequest, credentials: BearerAuth) -> Result<ServiceRequest, Error> {
+    let config = req
+        .app_data::<Config>()
+        .map(|data| data.clone())
+        .unwrap_or_else(|| Default::default());
+    match auth::validate_token(credentials.token()).await {
+        Ok(res) => {
+            if res == true {
+                Ok(req)
+            } else {
+                Err(AuthenticationError::from(config).into())
+            }
+        }
+        Err(_) => Err(AuthenticationError::from(config).into()),
+    }
 }
 
 #[tokio::main]
@@ -41,11 +60,13 @@ async fn main() -> std::io::Result<()> {
     let pool = establish_pool();
 
     let server = HttpServer::new(move || {
+        let auth = HttpAuthentication::bearer(validator);
         App::new()
             .data(AppState {
                 riot_api: rito::create_riot_api(),
                 db_conn: pool.clone(),
             })
+            .wrap(auth)
             .wrap(middleware::Logger::default())
             .service(users::get_users)
             .service(users::add_user)
