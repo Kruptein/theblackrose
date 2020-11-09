@@ -12,8 +12,6 @@ extern crate diesel;
 #[macro_use]
 extern crate serde;
 
-use crate::routes::users;
-
 use actix_cors::Cors;
 use actix_web::{middleware::Logger, App, HttpServer};
 use actix_web_httpauth::middleware::HttpAuthentication;
@@ -47,7 +45,6 @@ async fn main() -> std::io::Result<()> {
             .wrap(Cors::permissive())
             .wrap(Logger::default())
             .wrap(Logger::new("%a %{User-Agent}i"))
-            .service(users::get_masteries)
     })
     .bind("0.0.0.0:9000")?
     .run()
