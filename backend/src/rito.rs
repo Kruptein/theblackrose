@@ -1,3 +1,5 @@
+pub mod summoners;
+
 use riven::RiotApi;
 use std::env;
 
