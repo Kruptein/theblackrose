@@ -1,4 +1,11 @@
 table! {
+    connections (user_id, summoner_id) {
+        user_id -> Int4,
+        summoner_id -> Int4,
+    }
+}
+
+table! {
     summoners (id) {
         id -> Int4,
         account_id -> Text,
@@ -24,6 +31,7 @@ joinable!(connections -> summoners (summoner_id));
 joinable!(connections -> users (user_id));
 
 allow_tables_to_appear_in_same_query!(
+    connections,
     summoners,
     users,
 );
