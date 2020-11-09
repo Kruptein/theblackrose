@@ -3,11 +3,12 @@ use diesel::{insert_into, prelude::*, result::Error, QueryDsl, RunQueryDsl};
 
 use crate::{
     auth::auth0::{get_user_info, UserInfo},
+    db::Conn,
     db::Pool,
-    models::NewUser,
+    models::users::NewUser,
+    models::users::User,
     schema::users::dsl::*,
 };
-use crate::{db::Conn, models::User, schema::users::dsl::users};
 
 fn get_user_by_subj(conn: Conn, subject: String) -> Result<User, Error> {
     users.filter(auth0_subject.eq(subject)).get_result(&conn)
