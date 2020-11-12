@@ -1,4 +1,5 @@
 pub mod auth0;
-mod helpers;
+pub mod cache;
+pub mod helpers;
 mod models;
 pub mod validation;

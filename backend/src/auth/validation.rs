@@ -1,13 +1,17 @@
+use std::collections::HashMap;
+
 use actix_web::{dev::ServiceRequest, web, Error};
 use actix_web_httpauth::extractors::{
     bearer::{BearerAuth, Config},
     AuthenticationError,
 };
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
+use tokio::sync::RwLock;
 
-use crate::{db::Pool, errors::ServiceError, handlers::users::register_subject, AppState};
+use crate::{db::Pool, errors::ServiceError, AppState};
 
 use super::{
+    cache::update_token_cache,
     helpers::{fetch_jwks, find_kid},
     models::Claims,
 };
@@ -23,20 +27,19 @@ pub async fn validator(
 
     let state = req.app_data::<web::Data<AppState>>().unwrap();
     let db_conn = state.db_conn.clone();
+    let tokens = &state.tokens;
 
-    match validate_token(db_conn, credentials.token()).await {
-        Ok(res) => {
-            if res == true {
-                Ok(req)
-            } else {
-                Err(AuthenticationError::from(config).into())
-            }
-        }
+    match validate_token(db_conn, tokens, credentials.token()).await {
+        Ok(()) => Ok(req),
         Err(_) => Err(AuthenticationError::from(config).into()),
     }
 }
 
-pub async fn validate_token(db_pool: Pool, token: &str) -> Result<bool, ServiceError> {
+pub async fn validate_token(
+    db_pool: Pool,
+    tokens: &RwLock<HashMap<String, i32>>,
+    token: &str,
+) -> Result<(), ServiceError> {
     let authority = std::env::var("AUTHORITY").expect("AUTHORITY must be set");
     let audience = std::env::var("AUDIENCE").expect("AUDIENCE must be set");
 
@@ -63,8 +66,8 @@ pub async fn validate_token(db_pool: Pool, token: &str) -> Result<bool, ServiceE
         &validation,
     ) {
         Ok(token_data) => {
-            register_subject(db_pool, token, token_data.claims.sub).await;
-            Ok(true)
+            update_token_cache(db_pool, tokens, token, token_data.claims.sub.as_str()).await;
+            Ok(())
         }
         Err(err) => Err(ServiceError::JWKSFetchError(err.to_string())),
     }

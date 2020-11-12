@@ -1,4 +1,6 @@
-use std::error::Error;
+use std::{collections::HashMap, error::Error};
+
+use tokio::sync::RwLock;
 
 use super::models::{Jwks, JwtHeader};
 
@@ -15,4 +17,12 @@ pub fn find_kid(token: &str) -> Option<String> {
         Ok(header) => Some(header.kid),
         Err(_) => None,
     }
+}
+
+pub async fn get_user_from_cache(
+    tokens: &RwLock<HashMap<String, i32>>,
+    token: &str,
+) -> Option<i32> {
+    let tokens = tokens.read().await;
+    tokens.get(token).map(i32::to_owned)
 }
