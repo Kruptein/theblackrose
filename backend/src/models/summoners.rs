@@ -10,6 +10,7 @@ pub struct Summoner {
     pub summoner_id: String,
     pub puuid: String,
     pub summoner_level: i64,
+    pub last_match_query_time: Option<chrono::NaiveDateTime>,
 }
 
 #[derive(Insertable, Debug)]

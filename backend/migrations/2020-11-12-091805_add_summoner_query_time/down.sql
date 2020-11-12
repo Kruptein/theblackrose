@@ -1,0 +1,1 @@
+ALTER TABLE summoners DROP COLUMN last_match_query_time;
