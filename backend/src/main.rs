@@ -21,6 +21,7 @@ use auth::validation::validator;
 use db::{establish_pool, Pool};
 use dotenv::dotenv;
 use riven::RiotApi;
+use routes::connections::{add_connection, get_connections};
 use tokio::sync::RwLock;
 
 pub struct AppState {
@@ -50,6 +51,8 @@ async fn main() -> std::io::Result<()> {
             .wrap(Cors::permissive())
             .wrap(Logger::default())
             .wrap(Logger::new("%a %{User-Agent}i"))
+            .service(add_connection)
+            .service(get_connections)
     })
     .bind("0.0.0.0:9000")?
     .run()
