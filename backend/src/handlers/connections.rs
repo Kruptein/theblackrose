@@ -21,6 +21,13 @@ pub fn add_connection(conn: &Conn, user: User, summoner: Summoner) -> Result<Con
         .get_result(conn)
 }
 
+pub fn get_connection_summoners(conn: &Conn) -> Result<Vec<Summoner>, Error> {
+    connections
+        .inner_join(summoners)
+        .get_results::<(Connection, Summoner)>(conn)
+        .map(|x| x.into_iter().map(|y| y.1).collect::<Vec<Summoner>>())
+}
+
 pub fn get_connection_names(conn: &Conn, user: User) -> Result<Vec<String>, Error> {
     connections
         .inner_join(summoners)
