@@ -7,7 +7,7 @@ use crate::{
         summoners::Summoner,
         users::User,
     },
-    schema::connections::dsl::{connections, user_id},
+    schema::connections::dsl::{connections, summoner_id, user_id},
     schema::summoners::dsl::{id as s_id, name, summoners},
 };
 
@@ -21,8 +21,8 @@ pub fn add_connection(conn: &Conn, user: User, summoner: Summoner) -> Result<Con
         .get_result(conn)
 }
 
-pub fn get_connections(conn: &Conn) -> Result<Vec<Connection>, Error> {
-    connections.get_results(conn)
+pub fn get_unique_connections(conn: &Conn) -> Result<Vec<Connection>, Error> {
+    connections.distinct_on(summoner_id).get_results(conn)
 }
 
 pub fn get_summoner(conn: &Conn, connection: Connection) -> Result<Summoner, Error> {

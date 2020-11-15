@@ -1,0 +1,1 @@
+ALTER TABLE summoners DROP COLUMN update_in_progress;

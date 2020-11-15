@@ -8,10 +8,13 @@ use riven::{consts::Region, models::match_v4::Match, models::match_v4::MatchRefe
 
 use crate::{
     db::Pool,
-    handlers::connections::get_connections,
+    errors::UpdateError,
     handlers::connections::get_summoner,
+    handlers::connections::get_unique_connections,
     handlers::matches::add_match_details,
     handlers::matches::{add_match_reference, get_match_reference},
+    handlers::summoners::set_all_summoners_update_state,
+    handlers::summoners::set_summoner_update_state,
     handlers::summoners::{self as s, set_summoner_last_query_time},
     models::connections::Connection,
     models::summoners::Summoner,
@@ -34,9 +37,20 @@ impl Actor for GameFetchActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         println!("Started actor");
+        // First make sure we reset any summoner update state that might not have properly be restored on shutdown
+        let db = self.db.clone();
+        spawn(async { unlock_all_summoners(db).await });
+        // Check all connections
         update_closure(self, ctx);
         ctx.run_interval(Duration::from_secs(1 * 60 * 60), update_closure);
     }
+}
+
+async fn unlock_all_summoners(db: Pool) {
+    let conn = db.get().unwrap();
+    web::block(move || set_all_summoners_update_state(&conn, false))
+        .await
+        .unwrap();
 }
 
 fn update_closure(actor: &mut GameFetchActor, _: &mut Context<GameFetchActor>) {
@@ -56,7 +70,7 @@ impl Handler<ConnectionUpdateMessage> for GameFetchActor {
 
 async fn update_connections(db: Pool) {
     let api = rito::create_riot_api();
-    match get_connections(&db.get().unwrap()) {
+    match get_unique_connections(&db.get().unwrap()) {
         Ok(connections) => {
             let db = &db.clone();
             for connection in connections {
@@ -72,11 +86,33 @@ async fn update_connection(db: Pool, api: &RiotApi, connection: Connection) {
     let summoner = web::block(move || get_summoner(&conn, connection))
         .await
         .unwrap();
-    update_summoner(&db, &api, &summoner).await;
-    update_matches_for_summoner(&db, api, summoner).await;
+    match summoner.update_in_progress {
+        true => (),
+        false => {
+            let summoner_id = summoner.id;
+            set_summoner_state(&db, summoner_id, true).await;
+            let update_state: Result<usize, UpdateError> = try {
+                update_summoner(&db, &api, &summoner).await?;
+                update_matches_for_summoner(&db, api, summoner).await?
+            };
+            set_summoner_state(&db, summoner_id, false).await;
+            update_state.unwrap();
+        }
+    }
 }
 
-async fn update_summoner(db: &Pool, api: &RiotApi, summoner: &Summoner) {
+async fn set_summoner_state(db: &Pool, summoner: i32, state: bool) {
+    let conn = db.get().unwrap();
+    web::block(move || set_summoner_update_state(&conn, summoner, state))
+        .await
+        .unwrap();
+}
+
+async fn update_summoner(
+    db: &Pool,
+    api: &RiotApi,
+    summoner: &Summoner,
+) -> Result<usize, UpdateError> {
     let summoner_id = summoner.id;
     match api
         .summoner_v4()
@@ -84,19 +120,26 @@ async fn update_summoner(db: &Pool, api: &RiotApi, summoner: &Summoner) {
         .await
     {
         Ok(summoner) => {
-            let conn = db.get().unwrap();
+            let conn = db.get().map_err(|e| UpdateError::PoolError(e))?;
             web::block(move || s::update_summoner(&conn, summoner_id, summoner))
                 .await
-                .unwrap();
+                .map_err(|e| UpdateError::BlockError(e))
         }
-        Err(_) => println!(
-            "Could not update summoner data for account id: {} (username: {})",
-            summoner.account_id, summoner.name
-        ),
+        Err(e) => {
+            println!(
+                "Could not update summoner data for account id: {} (username: {})",
+                summoner.account_id, summoner.name
+            );
+            Err(UpdateError::RiotError(e))
+        }
     }
 }
 
-async fn update_matches_for_summoner(db: &Pool, api: &RiotApi, summoner: Summoner) {
+async fn update_matches_for_summoner(
+    db: &Pool,
+    api: &RiotApi,
+    summoner: Summoner,
+) -> Result<usize, UpdateError> {
     let begin_time = chrono::Utc.ymd(2000, 1, 1).and_hms(1, 1, 1).naive_utc();
     let begin_time = summoner.last_match_query_time.unwrap_or(begin_time);
     let mut begin_index = 0;
@@ -134,7 +177,7 @@ async fn update_matches_for_summoner(db: &Pool, api: &RiotApi, summoner: Summone
                         break 'outer;
                     }
 
-                    if handle_match(db, api, game, summoner.id).await {
+                    if handle_match(db, api, game, summoner.id).await? {
                         games_added += 1;
                     }
                 }
@@ -151,18 +194,19 @@ async fn update_matches_for_summoner(db: &Pool, api: &RiotApi, summoner: Summone
         begin_index += 100;
     }
     if last_game_time.is_some() {
-        let conn = db.get().unwrap();
+        let conn = db.get().map_err(|e| UpdateError::PoolError(e))?;
         let summoner_id = summoner.id.clone();
         web::block(move || {
             set_summoner_last_query_time(&conn, summoner_id, last_game_time.unwrap())
         })
         .await
-        .unwrap();
+        .map_err(|e| UpdateError::BlockError(e))?;
     }
     println!(
         "Completed match update loop for {} [{} games added]",
         summoner.name, games_added
     );
+    Ok(games_added)
 }
 
 async fn handle_match(
@@ -170,16 +214,16 @@ async fn handle_match(
     api: &RiotApi,
     match_reference: MatchReference,
     summoner_id: i32,
-) -> bool {
-    let conn = db.get().unwrap();
+) -> Result<bool, UpdateError> {
+    let conn = db.get().map_err(|e| UpdateError::PoolError(e))?;
     let game_id = match_reference.game_id.clone();
     match web::block(move || get_match_reference(&conn, game_id, summoner_id)).await {
-        Ok(_) => false,
+        Ok(_) => Ok(false),
         Err(_) => {
             // Only add the match reference to the db if we could actually also fetch the details
             match get_match_details(api, match_reference.game_id).await {
                 Some(match_details) => {
-                    let conn = db.get().unwrap();
+                    let conn = db.get().map_err(|e| UpdateError::PoolError(e))?;
                     web::block(move || {
                         let c = &conn;
                         c.transaction(move || {
@@ -188,10 +232,10 @@ async fn handle_match(
                         })
                     })
                     .await
-                    .unwrap();
-                    true
+                    .map_err(|e| UpdateError::BlockError(e))?;
+                    Ok(true)
                 }
-                None => false,
+                None => Ok(false),
             }
         }
     }

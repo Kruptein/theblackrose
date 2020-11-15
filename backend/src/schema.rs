@@ -164,6 +164,7 @@ table! {
         puuid -> Nullable<Text>,
         summoner_level -> Nullable<Int8>,
         last_match_query_time -> Nullable<Timestamp>,
+        update_in_progress -> Bool,
     }
 }
 

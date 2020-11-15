@@ -7,7 +7,7 @@ use crate::{
     models::summoners::{NewSummoner, Summoner},
     schema::summoners::dsl::{
         account_id, last_match_query_time, name, profile_icon_id, revision_date, summoner_level,
-        summoners,
+        summoners, update_in_progress,
     },
 };
 
@@ -67,5 +67,17 @@ pub fn set_summoner_last_query_time(
 ) -> Result<usize, Error> {
     update(summoners.find(summoner))
         .set(last_match_query_time.eq(time))
+        .execute(conn)
+}
+
+pub fn set_summoner_update_state(conn: &Conn, summoner: i32, state: bool) -> Result<usize, Error> {
+    update(summoners.find(summoner))
+        .set(update_in_progress.eq(state))
+        .execute(conn)
+}
+
+pub fn set_all_summoners_update_state(conn: &Conn, state: bool) -> Result<usize, Error> {
+    update(summoners)
+        .set(update_in_progress.eq(state))
         .execute(conn)
 }
