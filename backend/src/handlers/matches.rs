@@ -8,9 +8,8 @@ use crate::{
         NewParticipantStatsDamage, NewParticipantStatsGeneral, NewParticipantStatsKills,
         NewParticipantStatsScores, NewParticipantStatsUtility, NewTeamStats, Participant,
     },
-    schema::match_references::dsl::match_references,
-    schema::match_references::dsl::{self as mr},
-    schema::matches::dsl::matches,
+    schema::match_references::dsl::{self as mr, match_references},
+    schema::matches::dsl::{self as m, matches},
     schema::participant_stats_damage::dsl::participant_stats_damage,
     schema::participant_stats_general::dsl::participant_stats_general,
     schema::participant_stats_kills::dsl::participant_stats_kills,
@@ -53,6 +52,10 @@ pub fn add_match_reference(
     insert_into(match_references)
         .values(new_match_reference)
         .get_result(conn)
+}
+
+pub fn get_match_details(conn: &Conn, game_id: i64) -> Result<Match, Error> {
+    matches.filter(m::game_id.eq(game_id)).get_result(conn)
 }
 
 pub fn add_match_details(conn: &Conn, match_details: R::Match) -> Result<Match, Error> {

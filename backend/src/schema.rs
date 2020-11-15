@@ -6,7 +6,7 @@ table! {
 }
 
 table! {
-    match_references (game_id) {
+    match_references (game_id, summoner_id) {
         game_id -> Int8,
         summoner_id -> Int4,
         role -> Nullable<Text>,

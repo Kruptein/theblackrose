@@ -1,4 +1,3 @@
-#![feature(try_blocks)]
 mod actor;
 mod auth;
 mod db;

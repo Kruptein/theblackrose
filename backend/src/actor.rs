@@ -8,11 +8,11 @@ use riven::{consts::Region, models::match_v4::Match, models::match_v4::MatchRefe
 
 use crate::{
     db::Pool,
-    errors::UpdateError,
     handlers::connections::get_summoner,
     handlers::connections::get_unique_connections,
     handlers::matches::add_match_details,
-    handlers::matches::{add_match_reference, get_match_reference},
+    handlers::matches::get_match_reference,
+    handlers::matches::{self as m, add_match_reference},
     handlers::summoners::set_all_summoners_update_state,
     handlers::summoners::set_summoner_update_state,
     handlers::summoners::{self as s, set_summoner_last_query_time},
@@ -91,12 +91,9 @@ async fn update_connection(db: Pool, api: &RiotApi, connection: Connection) {
         false => {
             let summoner_id = summoner.id;
             set_summoner_state(&db, summoner_id, true).await;
-            let update_state: Result<usize, UpdateError> = try {
-                update_summoner(&db, &api, &summoner).await?;
-                update_matches_for_summoner(&db, api, summoner).await?
-            };
+            update_summoner(&db, &api, &summoner).await;
+            update_matches_for_summoner(&db, api, summoner).await;
             set_summoner_state(&db, summoner_id, false).await;
-            update_state.unwrap();
         }
     }
 }
@@ -108,11 +105,7 @@ async fn set_summoner_state(db: &Pool, summoner: i32, state: bool) {
         .unwrap();
 }
 
-async fn update_summoner(
-    db: &Pool,
-    api: &RiotApi,
-    summoner: &Summoner,
-) -> Result<usize, UpdateError> {
+async fn update_summoner(db: &Pool, api: &RiotApi, summoner: &Summoner) {
     let summoner_id = summoner.id;
     match api
         .summoner_v4()
@@ -120,26 +113,19 @@ async fn update_summoner(
         .await
     {
         Ok(summoner) => {
-            let conn = db.get().map_err(|e| UpdateError::PoolError(e))?;
+            let conn = db.get().unwrap();
             web::block(move || s::update_summoner(&conn, summoner_id, summoner))
                 .await
-                .map_err(|e| UpdateError::BlockError(e))
+                .unwrap();
         }
-        Err(e) => {
-            println!(
-                "Could not update summoner data for account id: {} (username: {})",
-                summoner.account_id, summoner.name
-            );
-            Err(UpdateError::RiotError(e))
-        }
+        Err(_) => println!(
+            "Could not update summoner data for account id: {} (username: {})",
+            summoner.account_id, summoner.name
+        ),
     }
 }
 
-async fn update_matches_for_summoner(
-    db: &Pool,
-    api: &RiotApi,
-    summoner: Summoner,
-) -> Result<usize, UpdateError> {
+async fn update_matches_for_summoner(db: &Pool, api: &RiotApi, summoner: Summoner) {
     let begin_time = chrono::Utc.ymd(2000, 1, 1).and_hms(1, 1, 1).naive_utc();
     let begin_time = summoner.last_match_query_time.unwrap_or(begin_time);
     let mut begin_index = 0;
@@ -177,7 +163,7 @@ async fn update_matches_for_summoner(
                         break 'outer;
                     }
 
-                    if handle_match(db, api, game, summoner.id).await? {
+                    if handle_match(db, api, game, summoner.id).await {
                         games_added += 1;
                     }
                 }
@@ -194,19 +180,18 @@ async fn update_matches_for_summoner(
         begin_index += 100;
     }
     if last_game_time.is_some() {
-        let conn = db.get().map_err(|e| UpdateError::PoolError(e))?;
+        let conn = db.get().unwrap();
         let summoner_id = summoner.id.clone();
         web::block(move || {
             set_summoner_last_query_time(&conn, summoner_id, last_game_time.unwrap())
         })
         .await
-        .map_err(|e| UpdateError::BlockError(e))?;
+        .unwrap();
     }
     println!(
         "Completed match update loop for {} [{} games added]",
         summoner.name, games_added
     );
-    Ok(games_added)
 }
 
 async fn handle_match(
@@ -214,28 +199,34 @@ async fn handle_match(
     api: &RiotApi,
     match_reference: MatchReference,
     summoner_id: i32,
-) -> Result<bool, UpdateError> {
-    let conn = db.get().map_err(|e| UpdateError::PoolError(e))?;
+) -> bool {
+    let conn = db.get().unwrap();
     let game_id = match_reference.game_id.clone();
     match web::block(move || get_match_reference(&conn, game_id, summoner_id)).await {
-        Ok(_) => Ok(false),
+        Ok(_) => false,
         Err(_) => {
             // Only add the match reference to the db if we could actually also fetch the details
             match get_match_details(api, match_reference.game_id).await {
                 Some(match_details) => {
-                    let conn = db.get().map_err(|e| UpdateError::PoolError(e))?;
+                    let conn = db.get().unwrap();
                     web::block(move || {
                         let c = &conn;
                         c.transaction(move || {
                             add_match_reference(c, match_reference, summoner_id)?;
-                            add_match_details(c, match_details)
+                            match m::get_match_details(c, match_details.game_id) {
+                                Ok(m) => Ok(m),
+                                Err(diesel::result::Error::NotFound) => {
+                                    add_match_details(c, match_details)
+                                }
+                                Err(e) => Err(e),
+                            }
                         })
                     })
                     .await
-                    .map_err(|e| UpdateError::BlockError(e))?;
-                    Ok(true)
+                    .unwrap();
+                    true
                 }
-                None => Ok(false),
+                None => false,
             }
         }
     }
