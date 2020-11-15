@@ -161,8 +161,14 @@ table! {
         id -> Int4,
         account_id -> Text,
         profile_icon_id -> Int4,
-        revision_date -> Int8,
+        revision_date -> Nullable<Int8>,
         name -> Text,
+        summoner_id -> Nullable<Text>,
+        puuid -> Nullable<Text>,
+        summoner_level -> Nullable<Int8>,
+        last_match_query_time -> Nullable<Timestamp>,
+    }
+}
 
 table! {
     team_stats (game_id, team_id) {
