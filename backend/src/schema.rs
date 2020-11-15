@@ -8,6 +8,7 @@ table! {
 table! {
     match_references (game_id) {
         game_id -> Int8,
+        summoner_id -> Int4,
         role -> Nullable<Text>,
         season -> Int4,
         platform_id -> Text,
@@ -34,8 +35,7 @@ table! {
 }
 
 table! {
-    participant_stats_damage (game_id, participant_id) {
-        game_id -> Int8,
+    participant_stats_damage (participant_id) {
         participant_id -> Int4,
         true_damage_dealt -> Int8,
         true_damage_dealt_to_champions -> Int8,
@@ -57,8 +57,7 @@ table! {
 }
 
 table! {
-    participant_stats_general (game_id, participant_id) {
-        game_id -> Int8,
+    participant_stats_general (participant_id) {
         participant_id -> Int4,
         champ_level -> Int4,
         win -> Bool,
@@ -75,8 +74,7 @@ table! {
 }
 
 table! {
-    participant_stats_kills (game_id, participant_id) {
-        game_id -> Int8,
+    participant_stats_kills (participant_id) {
         participant_id -> Int4,
         kills -> Int4,
         deaths -> Int4,
@@ -106,8 +104,7 @@ table! {
 }
 
 table! {
-    participant_stats_scores (game_id, participant_id) {
-        game_id -> Int8,
+    participant_stats_scores (participant_id) {
         participant_id -> Int4,
         combat_player_score -> Nullable<Int4>,
         objective_player_score -> Nullable<Int4>,
@@ -128,8 +125,7 @@ table! {
 }
 
 table! {
-    participant_stats_utility (game_id, participant_id) {
-        game_id -> Int8,
+    participant_stats_utility (participant_id) {
         participant_id -> Int4,
         total_units_healed -> Int4,
         total_heal -> Int8,
@@ -144,7 +140,8 @@ table! {
 }
 
 table! {
-    participants (game_id, participant_id) {
+    participants (id) {
+        id -> Int4,
         game_id -> Int8,
         participant_id -> Int4,
         summoner_id -> Nullable<Int4>,
@@ -202,11 +199,12 @@ table! {
 
 joinable!(connections -> summoners (summoner_id));
 joinable!(connections -> users (user_id));
-joinable!(participant_stats_damage -> matches (game_id));
-joinable!(participant_stats_general -> matches (game_id));
-joinable!(participant_stats_kills -> matches (game_id));
-joinable!(participant_stats_scores -> matches (game_id));
-joinable!(participant_stats_utility -> matches (game_id));
+joinable!(match_references -> summoners (summoner_id));
+joinable!(participant_stats_damage -> participants (participant_id));
+joinable!(participant_stats_general -> participants (participant_id));
+joinable!(participant_stats_kills -> participants (participant_id));
+joinable!(participant_stats_scores -> participants (participant_id));
+joinable!(participant_stats_utility -> participants (participant_id));
 joinable!(participants -> matches (game_id));
 joinable!(participants -> summoners (summoner_id));
 joinable!(team_stats -> matches (game_id));

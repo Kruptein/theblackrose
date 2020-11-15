@@ -1,13 +1,3 @@
-CREATE TABLE match_references (
-    game_id BIGINT NOT NULL PRIMARY KEY,
-    role TEXT,
-    season INT NOT NULL,
-    platform_id TEXT NOT NULL,
-    champion TEXT NOT NULL,
-    queue INT NOT NULL,
-    lane TEXT,
-    timestamp BIGINT NOT NULL
-);
 CREATE TABLE matches (
     game_id BIGINT NOT NULL PRIMARY KEY,
     queue_id SMALLINT NOT NULL,
@@ -40,19 +30,18 @@ CREATE TABLE team_stats (
     PRIMARY KEY(game_id, team_id)
 );
 CREATE TABLE participants (
-    game_id BIGINT REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    id SERIAL NOT NULL PRIMARY KEY,
+    game_id BIGINT NOT NULL REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
     participant_id INT NOT NULL,
     summoner_id INT REFERENCES summoners (id),
     champion_id TEXT NOT NULL,
     team_id SMALLINT NOT NULL,
     spell1_id INT NOT NULL,
     spell2_id INT NOT NULL,
-    highest_achieved_season_tier TEXT,
-    PRIMARY KEY(game_id, participant_id)
+    highest_achieved_season_tier TEXT
 );
 CREATE TABLE participant_stats_general (
-    game_id BIGINT REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    participant_id INT NOT NULL,
+    participant_id INT REFERENCES participants (id) ON UPDATE CASCADE ON DELETE CASCADE PRIMARY KEY,
     champ_level INT NOT NULL,
     win BOOLEAN NOT NULL,
     gold_earned INT NOT NULL,
@@ -63,12 +52,10 @@ CREATE TABLE participant_stats_general (
     item3 INT NOT NULL,
     item4 INT NOT NULL,
     item5 INT NOT NULL,
-    item6 INT NOT NULL,
-    PRIMARY KEY(game_id, participant_id)
+    item6 INT NOT NULL
 );
 CREATE TABLE participant_stats_kills (
-    game_id BIGINT REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    participant_id INT NOT NULL,
+    participant_id INT REFERENCES participants (id) ON UPDATE CASCADE ON DELETE CASCADE PRIMARY KEY,
     kills INT NOT NULL,
     deaths INT NOT NULL,
     assists INT NOT NULL,
@@ -92,12 +79,10 @@ CREATE TABLE participant_stats_kills (
     neutral_minions_killed INT NOT NULL,
     neutral_minions_killed_enemy_jungle INT,
     neutral_minions_killed_team_jungle INT,
-    total_minions_killed INT NOT NULL,
-    PRIMARY KEY(game_id, participant_id)
+    total_minions_killed INT NOT NULL
 );
 CREATE TABLE participant_stats_damage (
-    game_id BIGINT REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    participant_id INT NOT NULL,
+    participant_id INT REFERENCES participants (id) ON UPDATE CASCADE ON DELETE CASCADE PRIMARY KEY,
     true_damage_dealt BIGINT NOT NULL,
     true_damage_dealt_to_champions BIGINT NOT NULL,
     true_damage_taken BIGINT NOT NULL,
@@ -113,12 +98,10 @@ CREATE TABLE participant_stats_damage (
     damage_dealt_to_turrets BIGINT NOT NULL,
     damage_dealt_to_objectives BIGINT NOT NULL,
     damage_self_mitigated BIGINT NOT NULL,
-    largest_critical_strike INT NOT NULL,
-    PRIMARY KEY(game_id, participant_id)
+    largest_critical_strike INT NOT NULL
 );
 CREATE TABLE participant_stats_scores (
-    game_id BIGINT REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    participant_id INT NOT NULL,
+    participant_id INT REFERENCES participants (id) ON UPDATE CASCADE ON DELETE CASCADE PRIMARY KEY,
     combat_player_score INT,
     objective_player_score INT,
     total_player_score INT,
@@ -133,12 +116,10 @@ CREATE TABLE participant_stats_scores (
     player_score6 INT,
     player_score7 INT,
     player_score8 INT,
-    player_score9 INT,
-    PRIMARY KEY(game_id, participant_id)
+    player_score9 INT
 );
 CREATE TABLE participant_stats_utility (
-    game_id BIGINT REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    participant_id INT NOT NULL,
+    participant_id INT REFERENCES participants (id) ON UPDATE CASCADE ON DELETE CASCADE PRIMARY KEY,
     total_units_healed INT NOT NULL,
     total_heal BIGINT NOT NULL,
     total_time_crowd_control_dealt INT NOT NULL,
@@ -147,6 +128,16 @@ CREATE TABLE participant_stats_utility (
     vision_wards_bought_in_game INT NOT NULL,
     vision_score BIGINT,
     wards_killed INT,
-    sight_wards_bought_in_game INT,
-    PRIMARY KEY(game_id, participant_id)
+    sight_wards_bought_in_game INT
+);
+CREATE TABLE match_references (
+    game_id BIGINT NOT NULL PRIMARY KEY,
+    summoner_id INT NOT NULL REFERENCES summoners (id) ON UPDATE CASCADE ON DELETE CASCADE,
+    role TEXT,
+    season INT NOT NULL,
+    platform_id TEXT NOT NULL,
+    champion TEXT NOT NULL,
+    queue INT NOT NULL,
+    lane TEXT,
+    timestamp BIGINT NOT NULL
 );

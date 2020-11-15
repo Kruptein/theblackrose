@@ -3,19 +3,27 @@ use std::time::Duration;
 use actix::{prelude::*, spawn};
 use actix_web::web;
 use chrono::TimeZone;
-use diesel::Connection;
+use diesel::Connection as DieselConnection;
 use riven::{consts::Region, models::match_v4::Match, models::match_v4::MatchReference, RiotApi};
 
 use crate::{
     db::Pool,
-    handlers::connections::get_connection_summoners,
+    handlers::connections::get_connections,
+    handlers::connections::get_summoner,
     handlers::matches::add_match_details,
     handlers::matches::{add_match_reference, get_match_reference},
     handlers::summoners::{self as s, set_summoner_last_query_time},
+    models::connections::Connection,
     models::summoners::Summoner,
     rito,
     utils::millis_to_chrono,
 };
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct ConnectionUpdateMessage {
+    pub connection: Connection,
+}
 
 pub struct GameFetchActor {
     pub db: Pool,
@@ -33,22 +41,39 @@ impl Actor for GameFetchActor {
 
 fn update_closure(actor: &mut GameFetchActor, _: &mut Context<GameFetchActor>) {
     let db = actor.db.clone();
-    spawn(async { update_matches(db).await })
+    spawn(async { update_connections(db).await })
 }
 
-async fn update_matches(db: Pool) {
+impl Handler<ConnectionUpdateMessage> for GameFetchActor {
+    type Result = ();
+
+    fn handle(&mut self, msg: ConnectionUpdateMessage, _: &mut Context<GameFetchActor>) {
+        println!("Got message");
+        let d = self.db.clone();
+        spawn(async { update_connection(d, &rito::create_riot_api(), msg.connection).await });
+    }
+}
+
+async fn update_connections(db: Pool) {
     let api = rito::create_riot_api();
-    match get_connection_summoners(&db.get().unwrap()) {
-        Ok(summoners) => {
+    match get_connections(&db.get().unwrap()) {
+        Ok(connections) => {
             let db = &db.clone();
-            for summoner in summoners {
-                // first update_summoner
-                update_summoner(db, &api, &summoner).await;
-                update_matches_for_summoner(db, &api, summoner).await;
+            for connection in connections {
+                update_connection(db.clone(), &api, connection).await;
             }
         }
         Err(_) => println!("Could not retrieve account ids from database!"),
     };
+}
+
+async fn update_connection(db: Pool, api: &RiotApi, connection: Connection) {
+    let conn = db.get().unwrap();
+    let summoner = web::block(move || get_summoner(&conn, connection))
+        .await
+        .unwrap();
+    update_summoner(&db, &api, &summoner).await;
+    update_matches_for_summoner(&db, api, summoner).await;
 }
 
 async fn update_summoner(db: &Pool, api: &RiotApi, summoner: &Summoner) {
@@ -109,7 +134,7 @@ async fn update_matches_for_summoner(db: &Pool, api: &RiotApi, summoner: Summone
                         break 'outer;
                     }
 
-                    if handle_match(db, api, game).await {
+                    if handle_match(db, api, game, summoner.id).await {
                         games_added += 1;
                     }
                 }
@@ -140,10 +165,15 @@ async fn update_matches_for_summoner(db: &Pool, api: &RiotApi, summoner: Summone
     );
 }
 
-async fn handle_match(db: &Pool, api: &RiotApi, match_reference: MatchReference) -> bool {
+async fn handle_match(
+    db: &Pool,
+    api: &RiotApi,
+    match_reference: MatchReference,
+    summoner_id: i32,
+) -> bool {
     let conn = db.get().unwrap();
     let game_id = match_reference.game_id.clone();
-    match web::block(move || get_match_reference(&conn, game_id)).await {
+    match web::block(move || get_match_reference(&conn, game_id, summoner_id)).await {
         Ok(_) => false,
         Err(_) => {
             // Only add the match reference to the db if we could actually also fetch the details
@@ -153,7 +183,7 @@ async fn handle_match(db: &Pool, api: &RiotApi, match_reference: MatchReference)
                     web::block(move || {
                         let c = &conn;
                         c.transaction(move || {
-                            add_match_reference(c, match_reference)?;
+                            add_match_reference(c, match_reference, summoner_id)?;
                             add_match_details(c, match_details)
                         })
                     })

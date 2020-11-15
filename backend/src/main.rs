@@ -16,7 +16,7 @@ extern crate serde;
 
 use std::collections::HashMap;
 
-use actix::Actor;
+use actix::{Actor, Addr};
 use actix_cors::Cors;
 use actix_web::{middleware::Logger, App, HttpServer};
 use actix_web_httpauth::middleware::HttpAuthentication;
@@ -32,10 +32,12 @@ pub struct AppState {
     db_conn: Pool,
     riot_api: RiotApi,
     tokens: RwLock<HashMap<String, i32>>,
+    update_task: Addr<GameFetchActor>,
 }
 
 fn main() -> std::io::Result<()> {
     dotenv().ok();
+    env_logger::init();
 
     let mut tok_runtime = tokio::runtime::Runtime::new().unwrap();
     let local_tasks = tokio::task::LocalSet::new();
@@ -45,19 +47,20 @@ fn main() -> std::io::Result<()> {
         tokio::task::spawn_local(system_fut);
 
         let pool = establish_pool();
-
-        GameFetchActor::create(|_| GameFetchActor { db: pool.clone() });
+        let actor = GameFetchActor::create(|_| GameFetchActor { db: pool.clone() }).clone();
 
         println!("Started the black rose backend service!");
 
         let _ = HttpServer::new(move || {
             let auth = HttpAuthentication::bearer(validator);
+            let a = &actor.clone();
 
             App::new()
                 .data(AppState {
                     riot_api: rito::create_riot_api(),
                     db_conn: pool.clone(),
                     tokens: RwLock::new(HashMap::new()),
+                    update_task: a.clone(),
                 })
                 .wrap(auth)
                 .wrap(Cors::permissive())

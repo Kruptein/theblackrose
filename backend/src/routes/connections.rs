@@ -2,7 +2,7 @@ use actix_web::{get, post, web, HttpResponse, Responder};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 
 use crate::{
-    auth::helpers::get_user_from_cache, handlers::connections as h,
+    actor::ConnectionUpdateMessage, auth::helpers::get_user_from_cache, handlers::connections as h,
     handlers::users::get_user_by_id, rito::summoners::get_summoner_by_name, AppState,
 };
 
@@ -44,7 +44,14 @@ pub async fn add_connection(
             match get_summoner_by_name(riot_api, db_pool, username.as_str()).await {
                 Some(summoner) => {
                     match h::add_connection(&db_pool.get().unwrap(), user, summoner) {
-                        Ok(_) => HttpResponse::Created().finish(),
+                        Ok(connection) => {
+                            println!("Sending message");
+                            &data
+                                .update_task
+                                .send(ConnectionUpdateMessage { connection })
+                                .await;
+                            HttpResponse::Created().finish()
+                        }
                         Err(_) => HttpResponse::Conflict().finish(),
                     }
                 }

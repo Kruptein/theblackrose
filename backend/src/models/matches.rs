@@ -3,6 +3,7 @@ use crate::schema::*;
 #[derive(Debug, Deserialize, Queryable, Serialize)]
 pub struct MatchReference {
     pub game_id: i64,
+    pub summoner_id: i32,
     pub role: Option<String>,
     pub season: i32,
     pub platform_id: String,
@@ -16,6 +17,7 @@ pub struct MatchReference {
 #[table_name = "match_references"]
 pub struct NewMatchReference<'a> {
     pub game_id: i64,
+    pub summoner_id: i32,
     pub role: Option<String>,
     pub season: i32,
     pub platform_id: String,
@@ -97,6 +99,7 @@ pub struct NewTeamStats {
 
 #[derive(Debug, Deserialize, Queryable, Serialize)]
 pub struct Participant {
+    pub id: i32,
     pub game_id: i64,
     pub participant_id: i32,
     pub summoner_id: Option<i32>,
@@ -143,7 +146,6 @@ pub struct ParticipantStatsGeneral {
 #[derive(Insertable, Debug)]
 #[table_name = "participant_stats_general"]
 pub struct NewParticipantStatsGeneral {
-    pub game_id: i64,
     pub participant_id: i32,
 
     pub champ_level: i32,
@@ -163,7 +165,6 @@ pub struct NewParticipantStatsGeneral {
 
 #[derive(Debug, Deserialize, Queryable, Serialize)]
 pub struct ParticipantStatsKills {
-    pub game_id: i64,
     pub participant_id: i32,
 
     pub kills: i32,
@@ -200,7 +201,6 @@ pub struct ParticipantStatsKills {
 #[derive(Insertable, Debug)]
 #[table_name = "participant_stats_kills"]
 pub struct NewParticipantStatsKills {
-    pub game_id: i64,
     pub participant_id: i32,
 
     pub kills: i32,
@@ -236,7 +236,6 @@ pub struct NewParticipantStatsKills {
 
 #[derive(Debug, Deserialize, Queryable, Serialize)]
 pub struct ParticipantStatsDamage {
-    pub game_id: i64,
     pub participant_id: i32,
 
     pub true_damage_dealt: i64,
@@ -265,7 +264,6 @@ pub struct ParticipantStatsDamage {
 #[derive(Insertable, Debug)]
 #[table_name = "participant_stats_damage"]
 pub struct NewParticipantStatsDamage {
-    pub game_id: i64,
     pub participant_id: i32,
 
     pub true_damage_dealt: i64,
@@ -293,7 +291,6 @@ pub struct NewParticipantStatsDamage {
 
 #[derive(Debug, Deserialize, Queryable, Serialize)]
 pub struct ParticipantStatsScores {
-    pub game_id: i64,
     pub participant_id: i32,
 
     pub combat_player_score: Option<i32>,
@@ -319,7 +316,6 @@ pub struct ParticipantStatsScores {
 #[derive(Insertable, Debug)]
 #[table_name = "participant_stats_scores"]
 pub struct NewParticipantStatsScores {
-    pub game_id: i64,
     pub participant_id: i32,
 
     pub combat_player_score: Option<i32>,
@@ -344,7 +340,6 @@ pub struct NewParticipantStatsScores {
 
 #[derive(Debug, Deserialize, Queryable, Serialize)]
 pub struct ParticipantStatsUtility {
-    pub game_id: i64,
     pub participant_id: i32,
 
     pub total_units_healed: i32,
@@ -363,7 +358,6 @@ pub struct ParticipantStatsUtility {
 #[derive(Insertable, Debug)]
 #[table_name = "participant_stats_utility"]
 pub struct NewParticipantStatsUtility {
-    pub game_id: i64,
     pub participant_id: i32,
 
     pub total_units_healed: i32,

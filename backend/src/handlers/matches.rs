@@ -6,7 +6,7 @@ use crate::{
     models::matches::{
         Match, MatchReference, NewMatch, NewMatchReference, NewParticipant,
         NewParticipantStatsDamage, NewParticipantStatsGeneral, NewParticipantStatsKills,
-        NewParticipantStatsScores, NewParticipantStatsUtility, NewTeamStats,
+        NewParticipantStatsScores, NewParticipantStatsUtility, NewTeamStats, Participant,
     },
     schema::match_references::dsl::match_references,
     schema::match_references::dsl::{self as mr},
@@ -22,19 +22,26 @@ use crate::{
 
 use super::summoners::get_or_add_partial_summoner;
 
-pub fn get_match_reference(conn: &Conn, game_id: i64) -> Result<MatchReference, Error> {
+pub fn get_match_reference(
+    conn: &Conn,
+    game_id: i64,
+    summoner_id: i32,
+) -> Result<MatchReference, Error> {
     match_references
         .filter(mr::game_id.eq(game_id))
+        .filter(mr::summoner_id.eq(summoner_id))
         .get_result(conn)
 }
 
 pub fn add_match_reference(
     conn: &Conn,
     match_reference: R::MatchReference,
+    summoner_id: i32,
 ) -> Result<MatchReference, Error> {
     let queue: u16 = match_reference.queue.into();
     let new_match_reference = NewMatchReference {
         game_id: match_reference.game_id,
+        summoner_id,
         role: match_reference.role,
         season: match_reference.season,
         platform_id: match_reference.platform_id,
@@ -131,23 +138,21 @@ fn add_participant(
         spell2_id: participant.spell2_id,
         highest_achieved_season_tier: participant.highest_achieved_season_tier.map(|t| t.into()),
     };
-    insert_into(participants)
+    let new_participant = insert_into(participants)
         .values(new_participant)
-        .execute(conn)
+        .get_result(conn)
         .unwrap();
 
-    add_participant_stats(conn, game_id, participant.participant_id, participant.stats);
+    add_participant_stats(conn, &new_participant, participant.stats);
 }
 
 fn add_participant_stats(
     conn: &Conn,
-    game_id: i64,
-    participant_id: i32,
+    participant: &Participant,
     participant_stats: R::ParticipantStats,
 ) {
     let new_participant_stats_general = NewParticipantStatsGeneral {
-        game_id,
-        participant_id,
+        participant_id: participant.id,
 
         champ_level: participant_stats.champ_level,
         win: participant_stats.win,
@@ -169,8 +174,7 @@ fn add_participant_stats(
         .unwrap();
 
     let new_participant_stats_kills = NewParticipantStatsKills {
-        game_id,
-        participant_id,
+        participant_id: participant.id,
 
         kills: participant_stats.kills,
         deaths: participant_stats.deaths,
@@ -208,8 +212,7 @@ fn add_participant_stats(
         .unwrap();
 
     let new_participant_stats_damage = NewParticipantStatsDamage {
-        game_id,
-        participant_id,
+        participant_id: participant.id,
 
         true_damage_dealt: participant_stats.true_damage_dealt,
         true_damage_dealt_to_champions: participant_stats.true_damage_dealt_to_champions,
@@ -239,8 +242,7 @@ fn add_participant_stats(
         .unwrap();
 
     let new_participant_stats_scores = NewParticipantStatsScores {
-        game_id,
-        participant_id,
+        participant_id: participant.id,
 
         combat_player_score: participant_stats.combat_player_score,
         objective_player_score: participant_stats.objective_player_score,
@@ -267,8 +269,7 @@ fn add_participant_stats(
         .unwrap();
 
     let new_participant_stats_utility = NewParticipantStatsUtility {
-        game_id,
-        participant_id,
+        participant_id: participant.id,
 
         total_units_healed: participant_stats.total_units_healed,
         total_heal: participant_stats.total_heal,

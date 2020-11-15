@@ -3,7 +3,7 @@ DROP TABLE participant_stats_kills;
 DROP TABLE participant_stats_damage;
 DROP TABLE participant_stats_scores;
 DROP TABLE participant_stats_utility;
+DROP TABLE match_references;
 DROP TABLE participants;
 DROP TABLE team_stats;
 DROP TABLE matches;
-DROP TABLE match_references;
