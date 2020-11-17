@@ -6,8 +6,8 @@ use crate::{
     db::Conn,
     models::summoners::{NewSummoner, Summoner},
     schema::summoners::dsl::{
-        account_id, last_match_query_time, name, profile_icon_id, revision_date, summoner_level,
-        summoners, update_in_progress,
+        account_id, last_match_query_time, name, profile_icon_id, puuid, revision_date,
+        summoner_level, summoners, update_in_progress,
     },
 };
 
@@ -35,6 +35,7 @@ pub fn update_summoner(conn: &Conn, id: i32, summoner: RS::Summoner) -> Result<u
             name.eq(summoner.name),
             revision_date.eq(summoner.revision_date),
             summoner_level.eq(summoner.summoner_level),
+            puuid.eq(summoner.puuid),
         ))
         .execute(conn)
 }
