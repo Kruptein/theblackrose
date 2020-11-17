@@ -1,30 +1,61 @@
+<script lang="ts">
+import Header from "@/components/Header.vue";
+export default {
+    components: {
+        Header,
+    },
+};
+</script>
+
 <template>
-    <div id="nav">
-        <router-link to="/">Home</router-link>
-        |
-        <router-link to="/about">About</router-link>
-    </div>
+    <Header />
     <router-view />
 </template>
 
 <style lang="scss">
+html,
+body,
+#app {
+    height: 100%;
+    overflow: auto;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
 #app {
     font-family: Avenir, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-align: center;
-    color: #2c3e50;
+    color: #fff;
+    background: #bc2131;
+
+    display: flex;
 }
 
-#nav {
-    padding: 30px;
+#welcome {
+    margin-top: 200px;
+    margin-left: 200px;
+    width: 1000px;
 
-    a {
-        font-weight: bold;
-        color: #2c3e50;
+    h1 {
+        font-size: 60px;
 
-        &.router-link-exact-active {
-            color: #42b983;
+        .smaller {
+            font-size: 40px;
+            color: #f2b7bd;
+        }
+
+        .lead {
+            font-size: 25px;
+            color: #f2b7bd;
+            margin-top: 0px;
+
+            .font-normal {
+                color: #ffffff;
+            }
         }
     }
 }

@@ -114,7 +114,6 @@ async function init() {
 
     return {
         install: (app: App) => {
-            app.config.globalProperties.$auth = authPlugin;
             app.provide("Auth", authPlugin);
         },
     };
@@ -124,3 +123,5 @@ export default {
     init,
     routeGuard,
 };
+
+export type AuthPlugin = typeof authPlugin;

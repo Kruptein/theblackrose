@@ -9,13 +9,22 @@ const routes: Array<RouteRecordRaw> = [
         component: Home,
     },
     {
-        path: "/about",
-        name: "About",
+        path: "/feed",
+        name: "MatchFeed",
         beforeEnter: auth0.routeGuard,
-        // route level code-splitting
-        // this generates a separate chunk (about.[hash].js) for this route
-        // which is lazy-loaded when the route is visited.
-        component: () => import(/* webpackChunkName: "about" */ "../views/About.vue"),
+        component: () => import(/* webpackChunkName: "connections" */ "../views/MatchFeed.vue"),
+    },
+    {
+        path: "/connections",
+        name: "Connections",
+        beforeEnter: auth0.routeGuard,
+        component: () => import(/* webpackChunkName: "connections" */ "../views/Connections.vue"),
+    },
+    {
+        path: "/connections/add",
+        name: "AddConnections",
+        beforeEnter: auth0.routeGuard,
+        component: () => import(/* webpackChunkName: "addconnections" */ "../views/AddConnections.vue"),
     },
 ];
 
