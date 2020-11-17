@@ -9,25 +9,27 @@ export default defineComponent({
         const summoner = ref("");
 
         const auth = inject<AuthPlugin>("Auth")!;
+        const message = ref("We just need the name of the summoner you want to inquire.");
 
         async function onSubmit() {
+            message.value = "Submitting to server";
             const token: string = await auth.getTokenSilently();
             const data = await fetch(backendUrl(`/api/connections/${summoner.value}/`), {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (data.status === 201) {
-                console.log("Successfully added connection.");
+                message.value = "Successfully added connection. Matches are being processed, this can take some time.";
             } else if (data.status === 404) {
-                console.log("Given username was not found");
+                message.value = "Given username was not found!";
             } else if (data.status === 409) {
-                console.log("Given username is already a connection!");
+                message.value = "Given username is already a connection!";
             } else {
-                console.log("Something went wrong.");
+                message.value = "Something went wrong.";
             }
         }
 
-        return { onSubmit, summoner };
+        return { onSubmit, message, summoner };
     },
 });
 </script>
@@ -39,17 +41,17 @@ export default defineComponent({
             src="https://vignette3.wikia.nocookie.net/leagueoflegends/images/6/6c/Black_Rose.png"
         />
 
-        <div id="connection-nav">
+        <!-- <div id="connection-nav">
             <ul>
                 <li><a href="{{ request.current_route_url() }}">Network Overview</a></li>
                 <li><a href="/connections/records/">Network Records</a></li>
                 <li><a href="/connections/winrates/">Network Winrates</a></li>
             </ul>
-        </div>
+        </div> -->
 
         <h1>Add new connection</h1>
         <p class="lead">
-            We just need the name of the summoner you want to inquire
+            {{ message }}
             <!-- {% if message %} {{ message }} {% else %} We just need the name of the summoner you want to inquire.{% endif
             %} -->
         </p>
