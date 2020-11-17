@@ -16,7 +16,7 @@ pub async fn get_connections(data: web::Data<AppState>, auth: BearerAuth) -> imp
             let user = move || get_user_by_id(&db_conn, user);
             let user = web::block(user).await.unwrap();
             let db_conn = db_pool.get().unwrap();
-            match web::block(move || h::get_connection_names(&db_conn, user)).await {
+            match web::block(move || h::get_connection_short_info(&db_conn, user)).await {
                 Ok(connections) => match serde_json::to_string(&connections) {
                     Ok(data) => HttpResponse::Ok().json(data),
                     Err(_) => HttpResponse::InternalServerError().finish(),

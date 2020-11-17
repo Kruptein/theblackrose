@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{env, time::Duration};
 
 use actix::{prelude::*, spawn};
 use actix_web::web;
@@ -41,7 +41,13 @@ impl Actor for GameFetchActor {
         let db = self.db.clone();
         spawn(async { unlock_all_summoners(db).await });
         // Check all connections
-        update_closure(self, ctx);
+        let skip: bool = env::var("SKIP_START_LOOP")
+            .unwrap_or("false".to_owned())
+            .parse()
+            .unwrap_or(false);
+        if !skip {
+            update_closure(self, ctx);
+        }
         ctx.run_interval(Duration::from_secs(1 * 60 * 60), update_closure);
     }
 }

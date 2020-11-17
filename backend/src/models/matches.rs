@@ -28,6 +28,7 @@ pub struct NewMatchReference<'a> {
 }
 
 #[derive(Debug, Deserialize, Queryable, Serialize)]
+#[serde(rename_all(serialize = "camelCase"))]
 pub struct Match {
     pub game_id: i64,
     pub queue_id: i16,
@@ -98,6 +99,7 @@ pub struct NewTeamStats {
 }
 
 #[derive(Debug, Deserialize, Queryable, Serialize)]
+#[serde(rename_all(serialize = "camelCase"))]
 pub struct Participant {
     pub id: i32,
     pub game_id: i64,
@@ -124,8 +126,8 @@ pub struct NewParticipant<'a> {
 }
 
 #[derive(Debug, Deserialize, Queryable, Serialize)]
+#[serde(rename_all(serialize = "camelCase"))]
 pub struct ParticipantStatsGeneral {
-    pub game_id: i64,
     pub participant_id: i32,
 
     pub champ_level: i32,
@@ -164,6 +166,7 @@ pub struct NewParticipantStatsGeneral {
 }
 
 #[derive(Debug, Deserialize, Queryable, Serialize)]
+#[serde(rename_all(serialize = "camelCase"))]
 pub struct ParticipantStatsKills {
     pub participant_id: i32,
 

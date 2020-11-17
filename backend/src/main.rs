@@ -18,14 +18,18 @@ use std::collections::HashMap;
 
 use actix::{Actor, Addr};
 use actix_cors::Cors;
-use actix_web::{middleware::Logger, App, HttpServer};
+use actix_files as fs;
+use actix_web::{middleware::Logger, web::scope, App, HttpServer};
 use actix_web_httpauth::middleware::HttpAuthentication;
 use actor::GameFetchActor;
 use auth::validation::validator;
 use db::{establish_pool, Pool};
 use dotenv::dotenv;
 use riven::RiotApi;
-use routes::connections::{add_connection, get_connections};
+use routes::{
+    connections::{add_connection, get_connections},
+    matches::get_matches,
+};
 use tokio::sync::RwLock;
 
 pub struct AppState {
@@ -62,12 +66,17 @@ fn main() -> std::io::Result<()> {
                     tokens: RwLock::new(HashMap::new()),
                     update_task: a.clone(),
                 })
-                .wrap(auth)
-                .wrap(Cors::permissive())
                 .wrap(Logger::default())
                 .wrap(Logger::new("%a %{User-Agent}i"))
-                .service(add_connection)
-                .service(get_connections)
+                .service(fs::Files::new("/ddragon", "../ddragon").show_files_listing())
+                .service(
+                    scope("/api/")
+                        .wrap(auth)
+                        .wrap(Cors::permissive())
+                        .service(add_connection)
+                        .service(get_connections)
+                        .service(get_matches),
+                )
         })
         .bind("0.0.0.0:9000")
         .unwrap()
