@@ -8,7 +8,7 @@ export default defineComponent({
     setup() {
         const auth = inject<AuthPlugin>("Auth")!;
 
-        const connections = ref<string[]>([]);
+        const connections = ref<[string, number][]>([]);
 
         const getSummonerIconImage = (iconId: number): string => {
             return backendUrl(`/ddragon/10.23.1/img/profileicon/${iconId}.png`);
@@ -19,7 +19,7 @@ export default defineComponent({
             const response = await fetch(backendUrl("/api/connections/"), {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            const data: string[] = JSON.parse(await response.json());
+            const data: [string, number][] = JSON.parse(await response.json());
             connections.value.push(...data);
         });
 

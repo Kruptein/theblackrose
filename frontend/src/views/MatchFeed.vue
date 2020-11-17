@@ -22,7 +22,7 @@ export default defineComponent({
         const auth = inject<AuthPlugin>("Auth")!;
 
         const matches = ref<MatchFeedElement[]>([]);
-        const connections = ref(["Kruptein", "JoskeDC"]);
+        const connections = ref<string[]>([]);
 
         const getChampionImage = (participant: Participant): string => {
             return backendUrl(`/ddragon/10.23.1/img/champion/${participant.championId}.png`);
@@ -62,11 +62,14 @@ export default defineComponent({
 
         onMounted(async () => {
             const token: string = await auth.getTokenSilently();
-            const response = await fetch(backendUrl("/api/matches/"), {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const data = await response.json();
-            matches.value = JSON.parse(data);
+            const headers = { headers: { Authorization: `Bearer ${token}` } };
+            const responses = await Promise.all([
+                fetch(backendUrl("/api/matches/"), headers),
+                fetch(backendUrl("/api/connections/"), headers),
+            ]);
+            const connectionData = JSON.parse(await responses[1].json());
+            connections.value = connectionData.map((c: [string, number]) => c[0]);
+            matches.value = JSON.parse(await responses[0].json());
             console.log(matches.value);
         });
 
