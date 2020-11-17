@@ -31,7 +31,10 @@ pub async fn validator(
 
     match validate_token(db_conn, tokens, credentials.token()).await {
         Ok(()) => Ok(req),
-        Err(_) => Err(AuthenticationError::from(config).into()),
+        Err(e) => {
+            println!("{:?}", e);
+            Err(AuthenticationError::from(config).into())
+        }
     }
 }
 
