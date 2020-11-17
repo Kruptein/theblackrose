@@ -1,6 +1,7 @@
 <script lang="ts">
 import { defineComponent, inject, ref } from "vue";
 import { AuthPlugin } from "../plugins/auth0";
+import { backendUrl } from "../utils";
 
 export default defineComponent({
     name: "AddConnections",
@@ -11,7 +12,7 @@ export default defineComponent({
 
         async function onSubmit() {
             const token: string = await auth.getTokenSilently();
-            const data = await fetch(`http://localhost:9000/api/connections/${summoner.value}/`, {
+            const data = await fetch(backendUrl(`/api/connections/${summoner.value}/`), {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
             });

@@ -1,6 +1,7 @@
 <script lang="ts">
 import { defineComponent, inject, onMounted, ref } from "vue";
 import { AuthPlugin } from "../plugins/auth0";
+import { backendUrl } from "../utils";
 
 export default defineComponent({
     name: "Connections",
@@ -10,16 +11,15 @@ export default defineComponent({
         const connections = ref<string[]>([]);
 
         const getSummonerIconImage = (iconId: number): string => {
-            return `http://localhost:9000/ddragon/10.23.1/img/profileicon/${iconId}.png`;
+            return backendUrl(`/ddragon/10.23.1/img/profileicon/${iconId}.png`);
         };
 
         onMounted(async () => {
             const token: string = await auth.getTokenSilently();
-            const response = await fetch("http://localhost:9000/api/connections/", {
+            const response = await fetch(backendUrl("/api/connections/"), {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const data: string[] = JSON.parse(await response.json());
-            console.log(data[0]);
             connections.value.push(...data);
         });
 

@@ -4,7 +4,7 @@ import { AuthPlugin } from "../plugins/auth0";
 import { Match, Participant, ParticipantStatsGeneral, ParticipantStatsKills, Summoner } from "../models/match";
 import { getQueueFromId } from "../models/queue";
 import { getSummonerFromId } from "../models/spells";
-import { decimalRound } from "../utils";
+import { backendUrl, decimalRound } from "../utils";
 
 interface MatchFeedElement {
     matchInfo: Match;
@@ -25,15 +25,15 @@ export default defineComponent({
         const connections = ref(["Kruptein", "JoskeDC"]);
 
         const getChampionImage = (participant: Participant): string => {
-            return `http://localhost:9000/ddragon/10.23.1/img/champion/${participant.championId}.png`;
+            return backendUrl(`/ddragon/10.23.1/img/champion/${participant.championId}.png`);
         };
 
         const getItemImage = (item: number): string => {
-            return `http://localhost:9000/ddragon/10.23.1/img/item/${item}.png`;
+            return backendUrl(`/ddragon/10.23.1/img/item/${item}.png`);
         };
 
         const getSummonerImage = (spell: number): string => {
-            return `http://localhost:9000/ddragon/10.23.1/img/spell/${getSummonerFromId(spell)}.png`;
+            return backendUrl(`/ddragon/10.23.1/img/spell/${getSummonerFromId(spell)}.png`);
         };
 
         const getKda = (stats: ParticipantStatsKills): number => {
@@ -62,7 +62,7 @@ export default defineComponent({
 
         onMounted(async () => {
             const token: string = await auth.getTokenSilently();
-            const response = await fetch("http://localhost:9000/api/matches/", {
+            const response = await fetch(backendUrl("/api/matches/"), {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const data = await response.json();
