@@ -14,12 +14,16 @@ extern crate diesel;
 #[macro_use]
 extern crate serde;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use actix::{Actor, Addr};
 use actix_cors::Cors;
 use actix_files as fs;
-use actix_web::{middleware::Logger, web::scope, App, HttpServer};
+use actix_web::{
+    middleware::Logger,
+    web::{self, scope},
+    App, HttpServer,
+};
 use actix_web_httpauth::middleware::HttpAuthentication;
 use actor::GameFetchActor;
 use auth::validation::validator;
@@ -34,7 +38,7 @@ use tokio::sync::RwLock;
 
 pub struct AppState {
     db_conn: Pool,
-    riot_api: RiotApi,
+    riot_api: Arc<RiotApi>,
     tokens: RwLock<HashMap<String, i32>>,
     update_task: Addr<GameFetchActor>,
 }
@@ -51,21 +55,29 @@ fn main() -> std::io::Result<()> {
         tokio::task::spawn_local(system_fut);
 
         let pool = establish_pool();
-        let actor = GameFetchActor::create(|_| GameFetchActor { db: pool.clone() }).clone();
+        let riot_api = Arc::new(rito::create_riot_api());
+
+        let actor = GameFetchActor::create(|_| GameFetchActor {
+            db: pool.clone(),
+            riot_api: riot_api.clone(),
+        })
+        .clone();
+
+        let web_data = web::Data::new(AppState {
+            riot_api: riot_api.clone(),
+            db_conn: pool.clone(),
+            tokens: RwLock::new(HashMap::new()),
+            update_task: actor.clone(),
+        });
 
         println!("Started the black rose backend service!");
 
         let _ = HttpServer::new(move || {
             let auth = HttpAuthentication::bearer(validator);
-            let a = &actor.clone();
+            // let a = &actor.clone();
 
             App::new()
-                .data(AppState {
-                    riot_api: rito::create_riot_api(),
-                    db_conn: pool.clone(),
-                    tokens: RwLock::new(HashMap::new()),
-                    update_task: a.clone(),
-                })
+                .app_data(web_data.clone())
                 .wrap(Logger::default())
                 .wrap(Logger::new("%a %{User-Agent}i"))
                 .service(fs::Files::new("/ddragon", "../ddragon").show_files_listing())

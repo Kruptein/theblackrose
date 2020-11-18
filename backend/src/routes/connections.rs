@@ -40,7 +40,9 @@ pub async fn add_connection(
 
     match get_user_from_cache(&data.tokens, auth.token()).await {
         Some(user) => {
-            let user = get_user_by_id(&db_pool.get().unwrap(), user).unwrap();
+            let db_conn = db_pool.clone().get().unwrap();
+            let user = move || get_user_by_id(&db_conn, user);
+            let user = web::block(user).await.unwrap();
             match get_summoner_by_name(riot_api, db_pool, username.as_str()).await {
                 Some(summoner) => {
                     match h::add_connection(&db_pool.get().unwrap(), user, summoner) {

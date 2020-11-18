@@ -1,4 +1,4 @@
-use std::{env, time::Duration};
+use std::{env, sync::Arc, time::Duration};
 
 use actix::{prelude::*, spawn};
 use actix_web::web;
@@ -18,7 +18,6 @@ use crate::{
     handlers::summoners::{self as s, set_summoner_last_query_time},
     models::connections::Connection,
     models::summoners::Summoner,
-    rito,
     utils::millis_to_chrono,
 };
 
@@ -30,6 +29,7 @@ pub struct ConnectionUpdateMessage {
 
 pub struct GameFetchActor {
     pub db: Pool,
+    pub riot_api: Arc<RiotApi>,
 }
 
 impl Actor for GameFetchActor {
@@ -61,7 +61,8 @@ async fn unlock_all_summoners(db: Pool) {
 
 fn update_closure(actor: &mut GameFetchActor, _: &mut Context<GameFetchActor>) {
     let db = actor.db.clone();
-    spawn(async { update_connections(db).await })
+    let riot_api = actor.riot_api.clone();
+    spawn(async { update_connections(db, riot_api).await })
 }
 
 impl Handler<ConnectionUpdateMessage> for GameFetchActor {
@@ -70,24 +71,24 @@ impl Handler<ConnectionUpdateMessage> for GameFetchActor {
     fn handle(&mut self, msg: ConnectionUpdateMessage, _: &mut Context<GameFetchActor>) {
         println!("Got message");
         let d = self.db.clone();
-        spawn(async { update_connection(d, &rito::create_riot_api(), msg.connection).await });
+        let api = self.riot_api.clone();
+        spawn(async { update_connection(d, api, msg.connection).await });
     }
 }
 
-async fn update_connections(db: Pool) {
-    let api = rito::create_riot_api();
+async fn update_connections(db: Pool, api: Arc<RiotApi>) {
     match get_unique_connections(&db.get().unwrap()) {
         Ok(connections) => {
             let db = &db.clone();
             for connection in connections {
-                update_connection(db.clone(), &api, connection).await;
+                update_connection(db.clone(), api.clone(), connection).await;
             }
         }
         Err(_) => println!("Could not retrieve account ids from database!"),
     };
 }
 
-async fn update_connection(db: Pool, api: &RiotApi, connection: Connection) {
+async fn update_connection(db: Pool, api: Arc<RiotApi>, connection: Connection) {
     let conn = db.get().unwrap();
     let summoner = web::block(move || get_summoner(&conn, connection))
         .await
@@ -98,7 +99,7 @@ async fn update_connection(db: Pool, api: &RiotApi, connection: Connection) {
             let summoner_id = summoner.id;
             set_summoner_state(&db, summoner_id, true).await;
             update_summoner(&db, &api, &summoner).await;
-            update_matches_for_summoner(&db, api, summoner).await;
+            update_matches_for_summoner(&db, &api, summoner).await;
             set_summoner_state(&db, summoner_id, false).await;
         }
     }
@@ -161,7 +162,10 @@ async fn update_matches_for_summoner(db: &Pool, api: &RiotApi, summoner: Summone
                 let batch_last_game_time =
                     games.matches.get(0).map(|g| millis_to_chrono(g.timestamp));
                 last_game_time = last_game_time.or(batch_last_game_time);
-                println!("{:?} ({} games)", batch_last_game_time, length);
+                println!(
+                    "{:?} ({} games) [{}]",
+                    batch_last_game_time, length, summoner.name
+                );
                 for game in games.matches {
                     let naive_timestamp = millis_to_chrono(game.timestamp);
 
