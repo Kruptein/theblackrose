@@ -14,7 +14,7 @@ extern crate diesel;
 #[macro_use]
 extern crate serde;
 
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, collections::HashSet, sync::Arc};
 
 use actix::{Actor, Addr};
 use actix_cors::Cors;
@@ -34,7 +34,7 @@ use routes::{
     connections::{add_connection, get_connections},
     matches::get_matches,
 };
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 
 pub struct AppState {
     db_conn: Pool,
@@ -60,6 +60,7 @@ fn main() -> std::io::Result<()> {
         let actor = GameFetchActor::create(|_| GameFetchActor {
             db: pool.clone(),
             riot_api: riot_api.clone(),
+            game_processing_lock: Arc::new(Mutex::new(HashSet::new())),
         })
         .clone();
 
