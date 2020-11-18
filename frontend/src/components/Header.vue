@@ -20,10 +20,10 @@ export default {
                     <template v-else>
                         <li><router-link to="/feed">Recent games</router-link></li>
                         <li><router-link to="/connections">Network</router-link></li>
-                        <li @click="auth.logout">Logout</li>
-                        <li id="alert-nav">
-                            <!-- <img src="{{ request.static_url('leaguenetwork:static/img/feather.png') }}" /> -->
-                        </li>
+                        <li @click="auth.logout"><a href="#">Logout</a></li>
+                        <!-- <li id="alert-nav"> -->
+                        <!-- <img src="{{ request.static_url('leaguenetwork:static/img/feather.png') }}" /> -->
+                        <!-- </li> -->
                     </template>
                 </template>
             </ul>
@@ -58,36 +58,29 @@ nav {
         font-size: 25px;
         font-weight: 500;
         padding: 0;
+        margin: 0;
     }
 
     li {
         display: flex;
+
+        & > * {
+            padding: 20px;
+            text-decoration: none;
+            color: inherit;
+        }
 
         &:hover {
             color: #d22537;
             background-color: white;
         }
 
-        a {
-            display: flex;
-            padding: 5px 15px 15px;
-            text-decoration: none;
-        }
-
         &:first-child {
             border-radius: 0 0 0 20px;
-
-            a:hover {
-                border-radius: 0 0 0 20px;
-            }
         }
 
         &:last-child {
             border-radius: 0 0 20px 0;
-
-            a:hover {
-                border-radius: 0 0 20px 0;
-            }
         }
     }
 }
