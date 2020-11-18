@@ -193,7 +193,7 @@ async fn update_matches_for_summoner(
                         lock.insert(game.game_id);
                     }
                     drop(lock);
-                    if has_game {
+                    if !has_game {
                         if add_game_details(db, api, game.game_id).await {
                             games_added += 1;
                         }
@@ -241,6 +241,7 @@ async fn add_game_details(db: &Pool, api: &RiotApi, game_id: i64) -> bool {
                     web::block(move || m::add_match_details(&conn, match_details))
                         .await
                         .unwrap();
+                    println!("Added game {}", game_id);
                     true
                 }
                 None => false,
@@ -263,6 +264,7 @@ async fn add_match_reference(db: &Pool, match_reference: MatchReference, summone
             web::block(move || m::add_match_reference(&conn, match_reference, summoner_id))
                 .await
                 .unwrap();
+            println!("Added match reference {} for {}", game_id, summoner_id);
             true
         }
         Err(e) => {
