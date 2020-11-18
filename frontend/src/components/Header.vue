@@ -50,7 +50,6 @@ nav {
         font-weight: 500;
         padding: 0;
         margin: 0;
-        border-radius: 0 0 20px 20px;
     }
 
     li {
@@ -68,11 +67,11 @@ nav {
         }
 
         &:first-child {
-            border-radius: 0 0 0 20px;
+            border-bottom-left-radius: 20px;
         }
 
         &:last-child {
-            border-radius: 0 0 20px 0;
+            border-bottom-right-radius: 20px;
         }
     }
 }
