@@ -1,7 +1,6 @@
 import createAuth0Client, { Auth0Client, RedirectLoginOptions } from "@auth0/auth0-spa-js";
 import { App, computed, reactive, watchEffect } from "vue";
 import { NavigationGuardNext, RouteLocation } from "vue-router";
-import router from "../router";
 
 let client: Auth0Client;
 const state = reactive({
