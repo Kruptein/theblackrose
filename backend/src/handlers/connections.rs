@@ -68,8 +68,8 @@ pub fn get_connection_matches(conn: &Conn, user: User) -> Result<Vec<MatchFeedEl
         .inner_join(summoners.inner_join(connections))
         .filter(user_id.eq(user.id))
         .limit(10)
-        .distinct_on(mr::game_id)
-        .order_by(mr::game_id.desc())
+        .distinct_on(mr::timestamp)
+        .order_by(mr::timestamp.desc())
         .get_results(conn)?;
     let mut match_collection: Vec<MatchFeedElement> = vec![];
     for reference in references {
