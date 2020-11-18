@@ -1,7 +1,7 @@
 use std::{env, sync::Arc, time::Duration};
 
 use actix::{prelude::*, spawn};
-use actix_web::web;
+use actix_web::{error::BlockingError, web};
 use chrono::TimeZone;
 use diesel::Connection as DieselConnection;
 use riven::{consts::Region, models::match_v4::Match, models::match_v4::MatchReference, RiotApi};
@@ -137,6 +137,7 @@ async fn update_matches_for_summoner(db: &Pool, api: &RiotApi, summoner: Summone
     let begin_time = summoner.last_match_query_time.unwrap_or(begin_time);
     let mut begin_index = 0;
     let mut games_added = 0;
+    let mut references_added = 0;
     let mut last_game_time: Option<chrono::NaiveDateTime> = None;
 
     println!("Starting match update loop for {}", summoner.name);
@@ -173,7 +174,11 @@ async fn update_matches_for_summoner(db: &Pool, api: &RiotApi, summoner: Summone
                         break 'outer;
                     }
 
-                    if handle_match(db, api, game, summoner.id).await {
+                    let adds = handle_match(db, api, game, summoner.id).await;
+                    if adds.0 {
+                        references_added += 1;
+                    }
+                    if adds.1 {
                         games_added += 1;
                     }
                 }
@@ -199,8 +204,8 @@ async fn update_matches_for_summoner(db: &Pool, api: &RiotApi, summoner: Summone
         .unwrap();
     }
     println!(
-        "Completed match update loop for {} [{} games added]",
-        summoner.name, games_added
+        "Completed match update loop for {} [{}/{} games added]",
+        summoner.name, games_added, references_added
     );
 }
 
@@ -209,34 +214,47 @@ async fn handle_match(
     api: &RiotApi,
     match_reference: MatchReference,
     summoner_id: i32,
-) -> bool {
+) -> (bool, bool) {
     let conn = db.get().unwrap();
     let game_id = match_reference.game_id.clone();
     match web::block(move || get_match_reference(&conn, game_id, summoner_id)).await {
-        Ok(_) => false,
+        Ok(_) => (false, false),
         Err(_) => {
-            // Only add the match reference to the db if we could actually also fetch the details
-            match get_match_details(api, match_reference.game_id).await {
-                Some(match_details) => {
+            let conn = db.get().unwrap();
+            match web::block(move || m::get_match_details(&conn, game_id)).await {
+                Ok(_) => {
                     let conn = db.get().unwrap();
-                    web::block(move || {
-                        let c = &conn;
-                        c.transaction(move || {
-                            add_match_reference(c, match_reference, summoner_id)?;
-                            match m::get_match_details(c, match_details.game_id) {
-                                Ok(m) => Ok(m),
-                                Err(diesel::result::Error::NotFound) => {
-                                    add_match_details(c, match_details)
-                                }
-                                Err(e) => Err(e),
-                            }
-                        })
-                    })
-                    .await
-                    .unwrap();
-                    true
+                    web::block(move || add_match_reference(&conn, match_reference, summoner_id))
+                        .await
+                        .unwrap();
+                    (true, false)
                 }
-                None => false,
+                Err(BlockingError::Error(diesel::result::Error::NotFound)) => {
+                    // Only add the match reference to the db if we could actually also fetch the details
+                    match get_match_details(api, match_reference.game_id).await {
+                        Some(match_details) => {
+                            let conn = db.get().unwrap();
+                            web::block(move || {
+                                let c = &conn;
+                                c.transaction(move || {
+                                    add_match_reference(c, match_reference, summoner_id)?;
+                                    match m::get_match_details(c, match_details.game_id) {
+                                        Ok(m) => Ok(m),
+                                        Err(diesel::result::Error::NotFound) => {
+                                            add_match_details(c, match_details)
+                                        }
+                                        Err(e) => Err(e),
+                                    }
+                                })
+                            })
+                            .await
+                            .unwrap();
+                            (true, true)
+                        }
+                        None => (false, false),
+                    }
+                }
+                Err(_) => (false, false),
             }
         }
     }
