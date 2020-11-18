@@ -8,6 +8,8 @@ export default defineComponent({
     setup() {
         const auth = inject<AuthPlugin>("Auth")!;
 
+        const loading = ref(true);
+
         const connections = ref<[string, number][]>([]);
 
         const getSummonerIconImage = (iconId: number): string => {
@@ -21,9 +23,10 @@ export default defineComponent({
             });
             const data: [string, number][] = JSON.parse(await response.json());
             connections.value.push(...data);
+            loading.value = false;
         });
 
-        return { connections, getSummonerIconImage };
+        return { connections, getSummonerIconImage, loading };
     },
 });
 </script>
@@ -35,8 +38,11 @@ export default defineComponent({
             src="https://vignette3.wikia.nocookie.net/leagueoflegends/images/6/6c/Black_Rose.png"
         />
 
-        <h1>Your Connections</h1>
-        <template v-if="connections.length > 0">
+        <template v-if="loading">
+            <h1>Waiting for server data</h1>
+        </template>
+        <template v-if="!loading && connections.length > 0">
+            <h1>Your Connections</h1>
             <p>
                 <router-link to="/connections/add" class="font-normal">Add more connections</router-link>
                 to gain more insight.
