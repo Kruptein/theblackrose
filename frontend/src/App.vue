@@ -38,7 +38,6 @@ body,
 #welcome {
     margin-top: 200px;
     margin-left: 200px;
-    width: 1000px;
 
     h1 {
         font-size: 60px;
