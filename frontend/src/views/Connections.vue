@@ -48,7 +48,7 @@ export default defineComponent({
         <h1>Your Connections</h1>
         <template v-if="connections.length > 0">
             <p class="lead">
-                <a href="/connections/add" class="font-normal">Add more connections</a>
+                <router-link to="/connections/add" class="font-normal">Add more connections</router-link>
                 to gain more insight.
             </p>
             <div id="connections">
