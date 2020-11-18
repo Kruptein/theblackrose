@@ -1,6 +1,7 @@
 import createAuth0Client, { Auth0Client, RedirectLoginOptions } from "@auth0/auth0-spa-js";
 import { App, computed, reactive, watchEffect } from "vue";
 import { NavigationGuardNext, RouteLocation } from "vue-router";
+import router from "../router";
 
 let client: Auth0Client;
 const state = reactive({
@@ -79,7 +80,7 @@ const routeGuard = (to: RouteLocation, from: RouteLocation, next: NavigationGuar
     });
 };
 
-async function init() {
+async function init(onRedirectCallback: (url: string) => void) {
     // const { onRedirectCallback, redirectUri = window.location.origin } = options;
     const redirectUri = window.location.origin;
 
@@ -101,7 +102,7 @@ async function init() {
             // Notify subscribers that the redirect callback has happened, passing the appState
             // (useful for retrieving any pre-authentication state)
             // onRedirectCallback(appState);
-            console.log("REDIRECT CALLBACK", appState);
+            onRedirectCallback(appState.targetUrl);
         }
     } catch (e) {
         state.error = e;
