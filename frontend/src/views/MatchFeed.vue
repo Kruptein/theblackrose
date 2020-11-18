@@ -116,7 +116,7 @@ export default defineComponent({
                         <br />
                         {{ getRelativeTime(match.matchInfo.gameCreation + 1000 * match.matchInfo.gameDuration) }}
                     </div>
-                    <div class="column font-semi-bold">
+                    <div class="column">
                         {{ participant.kills.kills }}/{{ participant.kills.deaths }}/{{ participant.kills.assists }}
                         <br />
                         KDA: {{ getKda(participant.kills) }}
