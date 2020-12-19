@@ -67,6 +67,14 @@ export default defineComponent({
             return "now";
         };
 
+        const toggleMatch = (event: { target: HTMLDivElement }): void => {
+            if (event.target.classList.contains("expand-match")) {
+                event.target.classList.remove("expand-match");
+            } else {
+                event.target.classList.add("expand-match");
+            }
+        };
+
         const token: string = await auth.getTokenSilently();
         const headers = { headers: { Authorization: `Bearer ${token}` } };
         let matchUrl = "/api/matches/";
@@ -91,6 +99,7 @@ export default defineComponent({
             getRelativeTime,
             getQueueFromId,
             matches,
+            toggleMatch,
         };
     },
 });
@@ -99,7 +108,7 @@ export default defineComponent({
 <template>
     <div id="matches">
         <template v-if="matches.length > 0">
-            <div id="match" v-for="match of matches" :key="match.matchInfo.gameId">
+            <div id="match" v-for="match of matches" :key="match.matchInfo.gameId" @click="toggleMatch">
                 <div
                     class="participant"
                     :class="{
@@ -165,20 +174,26 @@ export default defineComponent({
     margin: 5em;
     display: flex;
     flex-direction: column;
+
+    #more-data {
+        margin: 15px;
+        margin-bottom: 50px;
+    }
 }
 
 #match {
     margin-bottom: 1em;
     border: 2px solid black;
     box-shadow: 2px 2px black;
+    cursor: pointer;
 
     .participant {
+        pointer-events: none;
         background-color: #d49190;
         display: flex;
         flex-direction: row;
         padding: 10px;
         height: 65px;
-        cursor: pointer;
 
         .champion {
             width: 60px;
@@ -199,12 +214,10 @@ export default defineComponent({
         background-color: #5aabbb;
     }
 
-    & > :not(.is-connection) {
-        display: none;
-    }
-
-    &:hover > :not(.is-connection) {
-        display: flex;
+    &:not(.expand-match) {
+        > :not(.is-connection) {
+            display: none;
+        }
     }
 }
 </style>
