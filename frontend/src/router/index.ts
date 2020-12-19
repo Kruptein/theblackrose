@@ -15,6 +15,12 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import(/* webpackChunkName: "connections" */ "../views/MatchFeed.vue"),
     },
     {
+        path: "/connection/:name/feed",
+        name: "ConnectionFeed",
+        beforeEnter: auth0.routeGuard,
+        component: () => import(/* webpackChunkName: "connections" */ "../views/ConnectionFeed.vue"),
+    },
+    {
         path: "/connections",
         name: "Connections",
         beforeEnter: auth0.routeGuard,

@@ -11,6 +11,7 @@ export interface Match {
     seasonId: number;
 }
 export interface Participant {
+    id: number;
     championId: string;
     gameId: number;
     highestAchievedSeasonTier?: string;

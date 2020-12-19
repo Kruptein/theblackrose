@@ -49,10 +49,10 @@ export default defineComponent({
             </p>
             <div id="connections">
                 <template v-for="connection of connections" :key="connection">
-                    <div class="connection">
+                    <router-link :to="'/connection/' + connection[0] + '/feed'" class="connection">
                         <img :src="getSummonerIconImage(connection[1])" />
                         <div class="connection-name">{{ connection[0] }}</div>
-                    </div>
+                    </router-link>
                 </template>
             </div>
         </template>
@@ -80,6 +80,8 @@ export default defineComponent({
     border-radius: 30px;
     padding: 0;
     display: flex;
+    text-decoration: none;
+    color: inherit;
 
     &:hover {
         background-color: white;

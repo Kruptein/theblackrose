@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, inject, ref } from "vue";
+import { defineComponent, inject, PropType, ref } from "vue";
 import { AuthPlugin } from "../plugins/auth0";
 import { Match, Participant, ParticipantStatsGeneral, ParticipantStatsKills, Summoner } from "../models/match";
 import { getQueueFromId } from "../models/queue";
@@ -16,9 +16,16 @@ interface MatchFeedElement {
     }[];
 }
 
+interface Filter {
+    names: string[];
+}
+
 export default defineComponent({
     name: "MatchList",
-    async setup() {
+    props: {
+        filter: Object as PropType<Filter>,
+    },
+    async setup(props) {
         const auth = inject<AuthPlugin>("Auth")!;
 
         const matches = ref<MatchFeedElement[]>([]);
@@ -62,8 +69,12 @@ export default defineComponent({
 
         const token: string = await auth.getTokenSilently();
         const headers = { headers: { Authorization: `Bearer ${token}` } };
+        let matchUrl = "/api/matches/";
+        if (props.filter?.names) {
+            matchUrl += `?names=${props.filter.names}`;
+        }
         const responses = await Promise.all([
-            fetch(backendUrl("/api/matches/"), headers),
+            fetch(backendUrl(matchUrl), headers),
             fetch(backendUrl("/api/connections/"), headers),
         ]);
         const connectionData = JSON.parse(await responses[1].json());
@@ -96,7 +107,7 @@ export default defineComponent({
                         'is-connection': connections.includes(participant.summoner.name),
                     }"
                     v-for="participant of match.participants"
-                    :key="participant.gameId + '-' + participant.participantId"
+                    :key="participant.participant.gameId + '-' + participant.participant.id"
                 >
                     <div
                         :style="{ backgroundImage: `url(${getChampionImage(participant.participant)})` }"

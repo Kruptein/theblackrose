@@ -1,3 +1,4 @@
+use actix_web::web;
 use diesel::{insert_into, prelude::*, result::Error, QueryDsl, RunQueryDsl};
 
 use crate::{
@@ -10,6 +11,7 @@ use crate::{
         summoners::Summoner,
         users::User,
     },
+    routes::matches::Filter,
     schema::connections::dsl::{connections, summoner_id, user_id},
     schema::match_references::dsl as mr,
     schema::matches::dsl::{self as m, matches},
@@ -63,14 +65,28 @@ pub struct MatchFeedElement {
     participants: Vec<MatchFeedParticipant>,
 }
 
-pub fn get_connection_matches(conn: &Conn, user: User) -> Result<Vec<MatchFeedElement>, Error> {
-    let references: Vec<(MatchReference, (Summoner, Connection))> = mr::match_references
-        .inner_join(summoners.inner_join(connections))
-        .filter(user_id.eq(user.id))
+pub fn get_connection_matches(
+    conn: &Conn,
+    user: User,
+    filter: web::Query<Filter>,
+) -> Result<Vec<MatchFeedElement>, Error> {
+    let user_connections = match filter.0.get_names() {
+        Some(names) => names,
+        None => summoners
+            .inner_join(connections)
+            .filter(user_id.eq(user.id))
+            .select(name)
+            .get_results(conn)?,
+    };
+
+    let references: Vec<(MatchReference, Summoner)> = mr::match_references
+        .inner_join(summoners)
+        .filter(name.eq_any(user_connections))
         .limit(10)
         .distinct_on(mr::timestamp)
         .order_by(mr::timestamp.desc())
         .get_results(conn)?;
+
     let mut match_collection: Vec<MatchFeedElement> = vec![];
     for reference in references {
         let match_info: Match = matches
