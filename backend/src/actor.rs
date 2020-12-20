@@ -18,6 +18,12 @@ pub struct ConnectionUpdateMessage {
     pub connection: Connection,
 }
 
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct SummonerUpdateMessage {
+    pub summoner: Summoner,
+}
+
 pub struct GameFetchActor {
     pub db: Pool,
     pub riot_api: Arc<RiotApi>,
@@ -62,11 +68,21 @@ impl Handler<ConnectionUpdateMessage> for GameFetchActor {
     type Result = ();
 
     fn handle(&mut self, msg: ConnectionUpdateMessage, _: &mut Context<GameFetchActor>) {
-        println!("Got message");
         let d = self.db.clone();
         let api = self.riot_api.clone();
         let game_processing_lock = self.game_processing_lock.clone();
         spawn(async { update_connection(d, api, game_processing_lock, msg.connection).await });
+    }
+}
+
+impl Handler<SummonerUpdateMessage> for GameFetchActor {
+    type Result = ();
+
+    fn handle(&mut self, msg: SummonerUpdateMessage, _: &mut Context<GameFetchActor>) {
+        let d = self.db.clone();
+        let api = self.riot_api.clone();
+        let game_processing_lock = self.game_processing_lock.clone();
+        spawn(async { update_summoner(d, msg.summoner, api, game_processing_lock).await });
     }
 }
 
@@ -102,16 +118,26 @@ async fn update_connection(
     let summoner = web::block(move || get_summoner(&conn, connection))
         .await
         .unwrap();
+    let db = &db.clone();
     match summoner.update_in_progress {
         true => (),
         false => {
-            let summoner_id = summoner.id;
-            set_summoner_state(&db, summoner_id, true).await;
-            update_summoner(&db, &api, &summoner).await;
-            update_matches_for_summoner(&db, &api, &game_processing_lock, summoner).await;
-            set_summoner_state(&db, summoner_id, false).await;
+            update_summoner(db.clone(), summoner, api, game_processing_lock).await;
         }
     }
+}
+
+async fn update_summoner(
+    db: Pool,
+    summoner: Summoner,
+    api: Arc<RiotApi>,
+    game_processing_lock: Arc<Mutex<HashSet<i64>>>,
+) {
+    let summoner_id = summoner.id;
+    set_summoner_state(&db, summoner_id, true).await;
+    update_summoner_table(&db, &api, &summoner).await;
+    update_matches_for_summoner(&db, &api, &game_processing_lock, summoner).await;
+    set_summoner_state(&db, summoner_id, false).await;
 }
 
 async fn set_summoner_state(db: &Pool, summoner: i32, state: bool) {
@@ -121,7 +147,7 @@ async fn set_summoner_state(db: &Pool, summoner: i32, state: bool) {
         .unwrap();
 }
 
-async fn update_summoner(db: &Pool, api: &RiotApi, summoner: &Summoner) {
+async fn update_summoner_table(db: &Pool, api: &RiotApi, summoner: &Summoner) {
     let summoner_id = summoner.id;
     match api
         .summoner_v4()

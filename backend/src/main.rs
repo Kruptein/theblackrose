@@ -31,7 +31,7 @@ use db::{establish_pool, Pool};
 use dotenv::dotenv;
 use riven::RiotApi;
 use routes::{
-    connections::{add_connection, get_connections},
+    connections::{add_connection, get_connections, refresh_connection},
     matches::get_matches,
 };
 use tokio::sync::{Mutex, RwLock};
@@ -89,7 +89,8 @@ fn main() -> std::io::Result<()> {
                         .wrap(Cors::permissive())
                         .service(add_connection)
                         .service(get_connections)
-                        .service(get_matches),
+                        .service(get_matches)
+                        .service(refresh_connection),
                 )
         })
         .bind("0.0.0.0:9000")

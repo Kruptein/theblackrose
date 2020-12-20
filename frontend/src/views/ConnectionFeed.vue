@@ -1,16 +1,32 @@
 <script lang="ts">
 import { defineComponent } from "vue";
+import { useRoute } from "vue-router";
+
 import MatchList from "../components/MatchList.vue";
+import { backendUrl } from "../utils";
+import { getHeader } from "../api/utils";
 
 export default defineComponent({
     name: "MatchFeed",
     components: { MatchList },
+
+    setup() {
+        const route = useRoute();
+
+        const refresh = async (): Promise<void> => {
+            const headers = await getHeader();
+            console.log(await fetch(backendUrl(`/api/connection/${route.params.name}/refresh`), headers));
+        };
+
+        return { refresh };
+    },
 });
 </script>
 
 <template>
     <div id="welcome">
         <img src="https://vignette3.wikia.nocookie.net/leagueoflegends/images/6/6c/Black_Rose.png" />
+        <div @click="refresh">Refresh</div>
         <Suspense>
             <template #default>
                 <div style="display: contents">

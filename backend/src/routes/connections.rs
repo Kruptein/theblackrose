@@ -2,8 +2,12 @@ use actix_web::{get, post, web, HttpResponse, Responder};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 
 use crate::{
-    actor::ConnectionUpdateMessage, auth::helpers::get_user_from_cache, handlers::connections as h,
-    handlers::users::get_user_by_id, rito::summoners::get_summoner_by_name, AppState,
+    actor::{ConnectionUpdateMessage, SummonerUpdateMessage},
+    auth::helpers::get_user_from_cache,
+    handlers::connections as h,
+    handlers::users::get_user_by_id,
+    rito::summoners::get_summoner_by_name,
+    AppState,
 };
 
 #[get("/connections/")]
@@ -60,6 +64,31 @@ pub async fn add_connection(
                 None => HttpResponse::NotFound().finish(),
             }
         }
+        None => HttpResponse::BadRequest().finish(),
+    }
+}
+
+#[get("/connection/{summoner_name}/refresh")]
+pub async fn refresh_connection(
+    data: web::Data<AppState>,
+    path: web::Path<String>,
+    auth: BearerAuth,
+) -> impl Responder {
+    let riot_api = &data.riot_api;
+    let db_pool = &data.db_conn;
+    let username = path.0;
+
+    match get_user_from_cache(&data.tokens, auth.token()).await {
+        Some(_) => match get_summoner_by_name(riot_api, db_pool, username.as_str()).await {
+            Some(summoner) => {
+                &data
+                    .update_task
+                    .send(SummonerUpdateMessage { summoner })
+                    .await;
+                HttpResponse::Ok().finish()
+            }
+            None => HttpResponse::NotFound().finish(),
+        },
         None => HttpResponse::BadRequest().finish(),
     }
 }
