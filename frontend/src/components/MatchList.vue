@@ -2,11 +2,13 @@
 import { defineComponent, PropType, ref } from "vue";
 
 import { fetchMatchFeed, fetchConnections } from "../api/matchfeed";
+import { getChampionImage, getItemImage, getSummonerImage } from "../ddragon";
 import { Participant, ParticipantStatsKills } from "../models/match";
+import { MatchFeedElement, MatchFeedFilter } from "../models/matchfeed";
 import { getQueueFromId } from "../models/queue";
 import { getSummonerFromId } from "../models/spells";
+import { patches } from "../state";
 import { backendUrl, decimalRound } from "../utils";
-import { MatchFeedElement, MatchFeedFilter } from "../models/matchfeed";
 
 export default defineComponent({
     name: "MatchList",
@@ -18,18 +20,6 @@ export default defineComponent({
         const connections = ref<string[]>([]);
 
         const filter = props.filter ?? {};
-
-        const getChampionImage = (participant: Participant): string => {
-            return backendUrl(`/ddragon/10.23.1/img/champion/${participant.championId}.png`);
-        };
-
-        const getItemImage = (item: number): string => {
-            return backendUrl(`/ddragon/10.23.1/img/item/${item}.png`);
-        };
-
-        const getSummonerImage = (spell: number): string => {
-            return backendUrl(`/ddragon/10.23.1/img/spell/${getSummonerFromId(spell)}.png`);
-        };
 
         const getKda = (stats: ParticipantStatsKills): number => {
             return decimalRound((stats.kills + stats.assists) / Math.max(stats.deaths, 1), 2);
@@ -105,7 +95,12 @@ export default defineComponent({
                     :key="participant.participant.gameId + '-' + participant.participant.id"
                 >
                     <div
-                        :style="{ backgroundImage: `url(${getChampionImage(participant.participant)})` }"
+                        :style="{
+                            backgroundImage: `url(${getChampionImage(
+                                participant.participant.championId,
+                                match.matchInfo.gameVersion,
+                            )})`,
+                        }"
                         class="champion"
                     />
                     <div class="column">
@@ -130,23 +125,41 @@ export default defineComponent({
                         {{ participant.kills.totalMinionsKilled }} cs
                     </div>
                     <div class="column">
-                        <img style="width: 30px; height: 30px" :src="getItemImage(participant.general.item0)" />
-                        <img style="width: 30px; height: 30px" :src="getItemImage(participant.general.item1)" />
-                        <img style="width: 30px; height: 30px" :src="getItemImage(participant.general.item2)" />
-                        <br />
-                        <img style="width: 30px; height: 30px" :src="getItemImage(participant.general.item3)" />
-                        <img style="width: 30px; height: 30px" :src="getItemImage(participant.general.item4)" />
-                        <img style="width: 30px; height: 30px" :src="getItemImage(participant.general.item5)" />
-                    </div>
-                    <div class="column">
                         <img
                             style="width: 30px; height: 30px"
-                            :src="getSummonerImage(participant.participant.spell1Id)"
+                            :src="getItemImage(participant.general.item0, match.matchInfo.gameVersion)"
+                        />
+                        <img
+                            style="width: 30px; height: 30px"
+                            :src="getItemImage(participant.general.item1, match.matchInfo.gameVersion)"
+                        />
+                        <img
+                            style="width: 30px; height: 30px"
+                            :src="getItemImage(participant.general.item2, match.matchInfo.gameVersion)"
                         />
                         <br />
                         <img
                             style="width: 30px; height: 30px"
-                            :src="getSummonerImage(participant.participant.spell2Id)"
+                            :src="getItemImage(participant.general.item3, match.matchInfo.gameVersion)"
+                        />
+                        <img
+                            style="width: 30px; height: 30px"
+                            :src="getItemImage(participant.general.item4, match.matchInfo.gameVersion)"
+                        />
+                        <img
+                            style="width: 30px; height: 30px"
+                            :src="getItemImage(participant.general.item5, match.matchInfo.gameVersion)"
+                        />
+                    </div>
+                    <div class="column">
+                        <img
+                            style="width: 30px; height: 30px"
+                            :src="getSummonerImage(participant.participant.spell1Id, match.matchInfo.gameVersion)"
+                        />
+                        <br />
+                        <img
+                            style="width: 30px; height: 30px"
+                            :src="getSummonerImage(participant.participant.spell2Id, match.matchInfo.gameVersion)"
                         />
                     </div>
                 </div>
