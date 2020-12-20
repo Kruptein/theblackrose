@@ -3,12 +3,10 @@ import { defineComponent, PropType, ref } from "vue";
 
 import { fetchMatchFeed, fetchConnections } from "../api/matchfeed";
 import { getChampionImage, getItemImage, getSummonerImage } from "../ddragon";
-import { Participant, ParticipantStatsKills } from "../models/match";
+import { ParticipantStatsKills } from "../models/match";
 import { MatchFeedElement, MatchFeedFilter } from "../models/matchfeed";
 import { getQueueFromId } from "../models/queue";
-import { getSummonerFromId } from "../models/spells";
-import { patches } from "../state";
-import { backendUrl, decimalRound } from "../utils";
+import { decimalRound } from "../utils";
 
 export default defineComponent({
     name: "MatchList",
