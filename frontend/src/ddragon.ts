@@ -1,6 +1,7 @@
+import { backendUrl } from "./api/utils";
 import { getSummonerFromId } from "./models/spells";
 import { patches } from "./state";
-import { backendUrl, compareVersions } from "./utils";
+import { compareVersions } from "./utils";
 
 function getMostRecentPatch(gameVersion: string): string {
     gameVersion = gameVersion

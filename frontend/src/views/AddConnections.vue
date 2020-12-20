@@ -1,23 +1,19 @@
 <script lang="ts">
-import { defineComponent, inject, ref } from "vue";
-import { AuthPlugin } from "../plugins/auth0";
-import { backendUrl } from "../utils";
+import { defineComponent, ref } from "vue";
+
+import { backendUrl, getAuthHeader } from "../api/utils";
 
 export default defineComponent({
     name: "AddConnections",
     setup() {
         const summoner = ref("");
 
-        const auth = inject<AuthPlugin>("Auth")!;
         const message = ref("We just need the name of the summoner you want to inquire.");
 
         async function onSubmit() {
             message.value = "Submitting to server";
-            const token: string = await auth.getTokenSilently();
-            const data = await fetch(backendUrl(`/api/connections/${summoner.value}/`), {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const headers = await getAuthHeader();
+            const data = await fetch(backendUrl(`/api/connections/${summoner.value}/`), headers);
             if (data.status === 201) {
                 message.value = "Successfully added connection. Matches are being processed, this can take some time.";
             } else if (data.status === 404) {

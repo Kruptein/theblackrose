@@ -1,13 +1,11 @@
 <script lang="ts">
-import { defineComponent, inject, onMounted, ref } from "vue";
-import { AuthPlugin } from "../plugins/auth0";
-import { backendUrl } from "../utils";
+import { defineComponent, onMounted, ref } from "vue";
+
+import { backendUrl, getAuthHeader } from "../api/utils";
 
 export default defineComponent({
     name: "Connections",
     setup() {
-        const auth = inject<AuthPlugin>("Auth")!;
-
         const loading = ref(true);
 
         const connections = ref<[string, number][]>([]);
@@ -17,10 +15,8 @@ export default defineComponent({
         };
 
         onMounted(async () => {
-            const token: string = await auth.getTokenSilently();
-            const response = await fetch(backendUrl("/api/connections/"), {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const headers = await getAuthHeader();
+            const response = await fetch(backendUrl("/api/connections/"), headers);
             const data: [string, number][] = JSON.parse(await response.json());
             connections.value.push(...data);
             loading.value = false;

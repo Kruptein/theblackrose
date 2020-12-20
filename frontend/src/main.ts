@@ -1,9 +1,10 @@
 import { createApp } from "vue";
+
+import { backendUrl } from "./api/utils";
 import App from "./App.vue";
 import Auth from "./plugins/auth0";
 import router from "./router";
 import { patches } from "./state";
-import { backendUrl } from "./utils";
 
 async function init() {
     const AuthPlugin = await Auth.init(async (url: string) => {

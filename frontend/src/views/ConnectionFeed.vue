@@ -2,9 +2,8 @@
 import { defineComponent } from "vue";
 import { useRoute } from "vue-router";
 
+import { backendUrl, getAuthHeader } from "../api/utils";
 import MatchList from "../components/MatchList.vue";
-import { backendUrl } from "../utils";
-import { getHeader } from "../api/utils";
 
 export default defineComponent({
     name: "MatchFeed",
@@ -14,7 +13,7 @@ export default defineComponent({
         const route = useRoute();
 
         const refresh = async (): Promise<void> => {
-            const headers = await getHeader();
+            const headers = await getAuthHeader();
             console.log(await fetch(backendUrl(`/api/connection/${route.params.name}/refresh`), headers));
         };
 

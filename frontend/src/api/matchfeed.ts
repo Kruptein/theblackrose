@@ -1,9 +1,8 @@
 import { MatchFeedElement, MatchFeedFilter } from "../models/matchfeed";
-import { backendUrl } from "../utils";
-import { getHeader } from "./utils";
+import { backendUrl, getAuthHeader } from "./utils";
 
 export async function fetchConnections(): Promise<string[]> {
-    const headers = await getHeader();
+    const headers = await getAuthHeader();
     const response = await fetch(backendUrl("/api/connections/"), headers);
 
     const connectionData: [string, number][] = JSON.parse(await response.json());
@@ -11,7 +10,7 @@ export async function fetchConnections(): Promise<string[]> {
 }
 
 export async function fetchMatchFeed(filter?: MatchFeedFilter): Promise<MatchFeedElement[]> {
-    const headers = await getHeader();
+    const headers = await getAuthHeader();
     let matchUrl = "/api/matches/";
     const queries: string[] = [];
     if (filter?.names) {
