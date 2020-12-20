@@ -46,7 +46,7 @@ pub async fn get_matches(
                     Err(_) => HttpResponse::InternalServerError().finish(),
                 },
                 Err(e) => {
-                    println!("{:?}", e);
+                    println!("Get matches error: {:?}", e);
                     HttpResponse::InternalServerError().finish()
                 }
             }
