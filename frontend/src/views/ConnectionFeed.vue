@@ -14,7 +14,7 @@ export default defineComponent({
         <Suspense>
             <template #default>
                 <div style="display: contents">
-                    <h1>Recent observationds</h1>
+                    <h1>Recent observations</h1>
                     <MatchList :filter="{ names: [$route.params.name] }" />
                 </div>
             </template>
