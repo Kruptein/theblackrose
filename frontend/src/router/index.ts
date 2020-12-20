@@ -12,13 +12,13 @@ const routes: Array<RouteRecordRaw> = [
         path: "/feed",
         name: "MatchFeed",
         beforeEnter: auth0.routeGuard,
-        component: () => import(/* webpackChunkName: "connections" */ "../views/MatchFeed.vue"),
+        component: () => import(/* webpackChunkName: "matchfeed" */ "../views/MatchFeed.vue"),
     },
     {
         path: "/connection/:name/feed",
         name: "ConnectionFeed",
         beforeEnter: auth0.routeGuard,
-        component: () => import(/* webpackChunkName: "connections" */ "../views/ConnectionFeed.vue"),
+        component: () => import(/* webpackChunkName: "connectionfeed" */ "../views/ConnectionFeed.vue"),
     },
     {
         path: "/connections",
