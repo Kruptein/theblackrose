@@ -1,35 +1,23 @@
 <script lang="ts">
-import { defineComponent, inject, PropType, ref } from "vue";
-import { AuthPlugin } from "../plugins/auth0";
-import { Match, Participant, ParticipantStatsGeneral, ParticipantStatsKills, Summoner } from "../models/match";
+import { defineComponent, PropType, ref } from "vue";
+
+import { fetchMatchFeed, fetchConnections } from "../api/matchfeed";
+import { Participant, ParticipantStatsKills } from "../models/match";
 import { getQueueFromId } from "../models/queue";
 import { getSummonerFromId } from "../models/spells";
 import { backendUrl, decimalRound } from "../utils";
-
-interface MatchFeedElement {
-    matchInfo: Match;
-    participants: {
-        participant: Participant;
-        summoner: Summoner;
-        general: ParticipantStatsGeneral;
-        kills: ParticipantStatsKills;
-    }[];
-}
-
-interface Filter {
-    names: string[];
-}
+import { MatchFeedElement, MatchFeedFilter } from "../models/matchfeed";
 
 export default defineComponent({
     name: "MatchList",
     props: {
-        filter: Object as PropType<Filter>,
+        filter: Object as PropType<MatchFeedFilter>,
     },
     async setup(props) {
-        const auth = inject<AuthPlugin>("Auth")!;
-
         const matches = ref<MatchFeedElement[]>([]);
         const connections = ref<string[]>([]);
+
+        const filter = props.filter ?? {};
 
         const getChampionImage = (participant: Participant): string => {
             return backendUrl(`/ddragon/10.23.1/img/champion/${participant.championId}.png`);
@@ -75,19 +63,16 @@ export default defineComponent({
             }
         };
 
-        const token: string = await auth.getTokenSilently();
-        const headers = { headers: { Authorization: `Bearer ${token}` } };
-        let matchUrl = "/api/matches/";
-        if (props.filter?.names) {
-            matchUrl += `?names=${props.filter.names}`;
-        }
-        const responses = await Promise.all([
-            fetch(backendUrl(matchUrl), headers),
-            fetch(backendUrl("/api/connections/"), headers),
-        ]);
-        const connectionData = JSON.parse(await responses[1].json());
-        connections.value = connectionData.map((c: [string, number]) => c[0]);
-        matches.value = JSON.parse(await responses[0].json());
+        const loadMoreData = async (): Promise<void> => {
+            matches.value.push(...(await fetchMatchFeed(filter)));
+            filter.start = matches.value[matches.value.length - 1].matchInfo.gameCreation;
+        };
+
+        const [matchData, connectionData] = await Promise.all([fetchMatchFeed(filter), fetchConnections()]);
+
+        matches.value = matchData;
+        connections.value = connectionData;
+        filter.start = matches.value[matches.value.length - 1].matchInfo.gameCreation;
 
         return {
             connections,
@@ -98,6 +83,7 @@ export default defineComponent({
             getSummonerImage,
             getRelativeTime,
             getQueueFromId,
+            loadMoreData,
             matches,
             toggleMatch,
         };
@@ -165,6 +151,7 @@ export default defineComponent({
                     </div>
                 </div>
             </div>
+            <div id="more-data" @click="loadMoreData">Load more data</div>
         </template>
     </div>
 </template>

@@ -40,7 +40,7 @@ async function handleRedirectCallback() {
     }
 }
 
-const authPlugin = {
+export const authPlugin = {
     isAuthenticated: computed(() => state.isAuthenticated),
     loading: computed(() => state.loading),
     user: computed(() => state.user),

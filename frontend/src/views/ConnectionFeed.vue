@@ -15,7 +15,7 @@ export default defineComponent({
             <template #default>
                 <div style="display: contents">
                     <h1>Recent observationds</h1>
-                    <MatchList :filter="{ names: [$route.params.name] }" :haha="true" />
+                    <MatchList :filter="{ names: [$route.params.name] }" />
                 </div>
             </template>
             <template #fallback>

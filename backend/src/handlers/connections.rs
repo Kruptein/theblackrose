@@ -68,20 +68,26 @@ pub struct MatchFeedElement {
 pub fn get_connection_matches(
     conn: &Conn,
     user: User,
-    filter: web::Query<Filter>,
+    filter_query: web::Query<Filter>,
 ) -> Result<Vec<MatchFeedElement>, Error> {
-    let user_connections = match filter.0.get_names() {
-        Some(names) => names,
+    let filter = filter_query.0;
+    let user_connections = match filter.get_names() {
+        Some(names) => names.to_owned(),
         None => summoners
             .inner_join(connections)
             .filter(user_id.eq(user.id))
             .select(name)
             .get_results(conn)?,
     };
+    let start_time = match filter.get_start_time() {
+        Some(s) => s.to_owned(),
+        None => i64::MAX,
+    };
 
     let references: Vec<(MatchReference, Summoner)> = mr::match_references
         .inner_join(summoners)
         .filter(name.eq_any(user_connections))
+        .filter(mr::timestamp.lt(start_time))
         .limit(10)
         .distinct_on(mr::timestamp)
         .order_by(mr::timestamp.desc())

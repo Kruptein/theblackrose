@@ -11,12 +11,18 @@ use crate::{
 #[derive(Deserialize)]
 pub struct Filter {
     names: Option<String>,
+    start: Option<i64>,
 }
 
 impl Filter {
-    pub fn get_names(self) -> Option<Vec<String>> {
+    pub fn get_names(&self) -> Option<Vec<String>> {
         self.names
+            .as_ref()
             .map(|names| names.split(",").map(|name| name.to_owned()).collect())
+    }
+
+    pub fn get_start_time(&self) -> Option<i64> {
+        self.start
     }
 }
 
