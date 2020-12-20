@@ -1,14 +1,3 @@
-export function getQueueFromId(queueId: number): string {
-    switch (queueId) {
-        case 0:
-            return "Custom";
-        case 450:
-            return "Aram";
-        default:
-            return "Unknown";
-    }
-}
-
 export enum Queue {
     // Games on Custom games
     Custom = 0,
@@ -207,4 +196,17 @@ export enum Queue {
     SUMMONERS_RIFT_TUTORIAL_2 = 2010,
     // Tutorial 3 games on Summoner's Rift
     SUMMONERS_RIFT_TUTORIAL_3 = 2020,
+}
+
+const friendlyQueueNames: Record<number, string> = {
+    0: "Custom",
+    450: "Aram",
+    1300: "Nexus Blitz",
+};
+
+export function getQueueFromId(queueId: number): string {
+    if (queueId in friendlyQueueNames) {
+        return friendlyQueueNames[queueId];
+    }
+    return Queue[queueId];
 }
