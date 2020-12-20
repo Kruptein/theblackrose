@@ -81,6 +81,7 @@ fn main() -> std::io::Result<()> {
                 .app_data(web_data.clone())
                 .wrap(Logger::default())
                 .wrap(Logger::new("%a %{User-Agent}i"))
+                .wrap(Cors::permissive())
                 .service(fs::Files::new("/ddragon", "../ddragon").show_files_listing())
                 .service(
                     scope("/api/")
