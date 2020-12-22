@@ -12,7 +12,7 @@ function getMostRecentPatch(gameVersion: string): string {
     let previousPatch: string | undefined;
     for (const patch of patches.value) {
         const cmp = compareVersions(gameVersion, patch);
-        if (cmp > 0) return previousPatch ?? lastPatch;
+        if (cmp < 0) return patch;
         else if (cmp === 0) return patch;
         previousPatch = patch;
     }
