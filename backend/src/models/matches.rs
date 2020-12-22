@@ -1,11 +1,28 @@
 use crate::schema::*;
 
+use super::summoners::Summoner;
+
+#[derive(Serialize)]
+#[serde(rename_all(serialize = "camelCase"))]
+pub struct MatchFeedParticipant {
+    pub participant: Participant,
+    pub summoner: Summoner,
+    pub general: ParticipantStatsGeneral,
+    pub kills: ParticipantStatsKills,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all(serialize = "camelCase"))]
+pub struct MatchFeedElement {
+    pub match_info: Match,
+    pub participants: Vec<MatchFeedParticipant>,
+}
+
 #[derive(Debug, Deserialize, Queryable, Serialize)]
 pub struct MatchReference {
     pub game_id: i64,
     pub summoner_id: i32,
     pub role: Option<String>,
-    pub season: i32,
     pub platform_id: String,
     pub champion: String,
     pub queue: i32,
@@ -19,7 +36,6 @@ pub struct NewMatchReference<'a> {
     pub game_id: i64,
     pub summoner_id: i32,
     pub role: Option<String>,
-    pub season: i32,
     pub platform_id: String,
     pub champion: &'a str,
     pub queue: i32,

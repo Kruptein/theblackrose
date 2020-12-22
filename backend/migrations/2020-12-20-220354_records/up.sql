@@ -1,0 +1,7 @@
+CREATE TABLE records (
+    id SERIAL NOT NULL PRIMARY KEY,
+    summoner_id INT REFERENCES summoners (id) ON UPDATE CASCADE ON DELETE CASCADE,
+    game_id BIGINT REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    record_type SMALLINT NOT NULL,
+    value INT NOT NULL
+);

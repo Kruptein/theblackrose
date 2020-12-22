@@ -3,7 +3,7 @@ import { inject } from "vue";
 import { AuthPlugin } from "../plugins/auth0";
 export default {
     setup() {
-        const auth = inject<AuthPlugin>("Auth");
+        const auth = inject<AuthPlugin>("Auth")!;
         return { auth };
     },
 };
@@ -19,6 +19,7 @@ export default {
                     </template>
                     <template v-else>
                         <li><router-link to="/feed">Recent games</router-link></li>
+                        <li><router-link to="/records">Records</router-link></li>
                         <li><router-link to="/connections">Network</router-link></li>
                         <li @click="auth.logout"><a href="#">Logout</a></li>
                     </template>

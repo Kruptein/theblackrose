@@ -38,6 +38,7 @@ impl Actor for GameFetchActor {
         // First make sure we reset any summoner update state that might not have properly be restored on shutdown
         let db = self.db.clone();
         spawn(async { unlock_all_summoners(db).await });
+
         // Check all connections
         let skip: bool = env::var("SKIP_START_LOOP")
             .unwrap_or("false".to_owned())

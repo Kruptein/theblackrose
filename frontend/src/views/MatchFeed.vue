@@ -1,10 +1,10 @@
 <script lang="ts">
 import { defineComponent } from "vue";
-import MatchList from "../components/MatchList.vue";
+import MatchFetcher from "../components/MatchFetcher.vue";
 
 export default defineComponent({
     name: "MatchFeed",
-    components: { MatchList },
+    components: { MatchFetcher },
 });
 </script>
 
@@ -15,7 +15,7 @@ export default defineComponent({
             <template #default>
                 <div style="display: contents">
                     <h1>Recent observations</h1>
-                    <MatchList />
+                    <MatchFetcher />
                 </div>
             </template>
             <template #fallback>

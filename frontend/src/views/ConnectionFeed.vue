@@ -2,12 +2,13 @@
 import { defineComponent } from "vue";
 import { useRoute } from "vue-router";
 
+import MatchFetcher from "../components/MatchFetcher.vue";
+
 import { backendUrl, getAuthHeader } from "../api/utils";
-import MatchList from "../components/MatchList.vue";
 
 export default defineComponent({
     name: "MatchFeed",
-    components: { MatchList },
+    components: { MatchFetcher },
 
     setup() {
         const route = useRoute();
@@ -30,7 +31,7 @@ export default defineComponent({
             <template #default>
                 <div style="display: contents">
                     <h1>Recent observations</h1>
-                    <MatchList :filter="{ names: [$route.params.name] }" />
+                    <MatchFetcher :filter="{ names: [$route.params.name] }" />
                 </div>
             </template>
             <template #fallback>

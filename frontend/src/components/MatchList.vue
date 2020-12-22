@@ -1,23 +1,28 @@
 <script lang="ts">
-import { defineComponent, PropType, ref } from "vue";
+import { defineComponent, PropType, ref, watch } from "vue";
 
-import { fetchMatchFeed, fetchConnections } from "../api/matchfeed";
 import { getChampionImage, getItemImage, getSummonerImage } from "../ddragon";
 import { ParticipantStatsKills } from "../models/match";
-import { MatchFeedElement, MatchFeedFilter } from "../models/matchfeed";
+import { MatchFeedElement } from "../models/matchfeed";
 import { getQueueFromId } from "../models/queue";
 import { decimalRound } from "../utils";
 
 export default defineComponent({
     name: "MatchList",
     props: {
-        filter: Object as PropType<MatchFeedFilter>,
+        matchData: Object as PropType<MatchFeedElement[]>,
+        visibleNames: Object as PropType<string[]>,
     },
-    async setup(props) {
-        const matches = ref<MatchFeedElement[]>([]);
-        const connections = ref<string[]>([]);
+    setup(props) {
+        const matches = ref<MatchFeedElement[]>(props.matchData ?? []);
+        const connections = ref<string[]>(props.visibleNames ?? []);
 
-        const filter = props.filter ?? {};
+        watch(
+            () => props.matchData,
+            matchData => {
+                matches.value = matchData ?? [];
+            },
+        );
 
         const getKda = (stats: ParticipantStatsKills): number => {
             return decimalRound((stats.kills + stats.assists) / Math.max(stats.deaths, 1), 2);
@@ -51,17 +56,6 @@ export default defineComponent({
             }
         };
 
-        const loadMoreData = async (): Promise<void> => {
-            matches.value.push(...(await fetchMatchFeed(filter)));
-            filter.start = matches.value[matches.value.length - 1].matchInfo.gameCreation;
-        };
-
-        const [matchData, connectionData] = await Promise.all([fetchMatchFeed(filter), fetchConnections()]);
-
-        matches.value = matchData;
-        connections.value = connectionData;
-        filter.start = matches.value[matches.value.length - 1].matchInfo.gameCreation;
-
         return {
             connections,
             decimalRound,
@@ -71,7 +65,6 @@ export default defineComponent({
             getSummonerImage,
             getRelativeTime,
             getQueueFromId,
-            loadMoreData,
             matches,
             toggleMatch,
         };
@@ -80,14 +73,14 @@ export default defineComponent({
 </script>
 
 <template>
-    <div id="matches">
+    <div class="matches">
         <template v-if="matches.length > 0">
-            <div id="match" v-for="match of matches" :key="match.matchInfo.gameId" @click="toggleMatch">
+            <div class="match" v-for="match of matches" :key="match.matchInfo.gameId" @click="toggleMatch">
                 <div
                     class="participant"
                     :class="{
                         'game-won': participant.general.win,
-                        'is-connection': connections.includes(participant.summoner.name),
+                        'is-connection': connections.length === 0 || connections.includes(participant.summoner.name),
                     }"
                     v-for="participant of match.participants"
                     :key="participant.participant.gameId + '-' + participant.participant.id"
@@ -162,24 +155,18 @@ export default defineComponent({
                     </div>
                 </div>
             </div>
-            <div id="more-data" @click="loadMoreData">Load more data</div>
         </template>
     </div>
 </template>
 
 <style lang="scss" scoped>
-#matches {
+.matches {
     margin: 5em;
     display: flex;
     flex-direction: column;
-
-    #more-data {
-        margin: 15px;
-        margin-bottom: 50px;
-    }
 }
 
-#match {
+.match {
     margin-bottom: 1em;
     border: 2px solid black;
     box-shadow: 2px 2px black;

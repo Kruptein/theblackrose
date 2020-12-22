@@ -1,21 +1,30 @@
 use diesel::{insert_into, prelude::*, result::Error, QueryDsl, RunQueryDsl};
 use riven::models::match_v4 as R;
+use strum::IntoEnumIterator;
 
 use crate::{
     db::Conn,
-    models::matches::{
-        Match, MatchReference, NewMatch, NewMatchReference, NewParticipant,
-        NewParticipantStatsDamage, NewParticipantStatsGeneral, NewParticipantStatsKills,
-        NewParticipantStatsScores, NewParticipantStatsUtility, NewTeamStats, Participant,
+    models::{
+        matches::{
+            Match, MatchFeedElement, MatchFeedParticipant, MatchReference, NewMatch,
+            NewMatchReference, NewParticipant, NewParticipantStatsDamage,
+            NewParticipantStatsGeneral, NewParticipantStatsKills, NewParticipantStatsScores,
+            NewParticipantStatsUtility, NewTeamStats, Participant, ParticipantStatsGeneral,
+            ParticipantStatsKills,
+        },
+        records::{NewRecord, RecordType},
+        summoners::Summoner,
     },
     schema::match_references::dsl::{self as mr, match_references},
     schema::matches::dsl::{self as m, matches},
     schema::participant_stats_damage::dsl::participant_stats_damage,
-    schema::participant_stats_general::dsl::participant_stats_general,
-    schema::participant_stats_kills::dsl::participant_stats_kills,
+    schema::participant_stats_general::dsl::{self as psg, participant_stats_general},
+    schema::participant_stats_kills::dsl::{self as psk, participant_stats_kills},
     schema::participant_stats_scores::dsl::participant_stats_scores,
     schema::participant_stats_utility::dsl::participant_stats_utility,
-    schema::participants::dsl::participants,
+    schema::participants::dsl::{self as p},
+    schema::records::dsl::{self as r},
+    schema::summoners::dsl::summoners,
     schema::team_stats::dsl::team_stats,
 };
 
@@ -32,6 +41,37 @@ pub fn get_match_reference(
         .get_result(conn)
 }
 
+pub fn get_game_info(game_id: i64, conn: &Conn) -> Result<MatchFeedElement, Error> {
+    let match_info: Match = matches.filter(m::game_id.eq(game_id)).get_result(conn)?;
+    let participants: Vec<(
+        Participant,
+        ParticipantStatsGeneral,
+        ParticipantStatsKills,
+        Summoner,
+    )> = p::participants
+        .inner_join(psg::participant_stats_general)
+        .inner_join(psk::participant_stats_kills)
+        .inner_join(summoners)
+        .filter(p::game_id.eq(game_id))
+        .order_by(psg::win)
+        .get_results(conn)?;
+    let participants: Vec<MatchFeedParticipant> = participants
+        .into_iter()
+        .map(|p| MatchFeedParticipant {
+            participant: p.0,
+            general: p.1,
+            kills: p.2,
+            summoner: p.3,
+        })
+        .collect();
+    Ok(MatchFeedElement {
+        match_info,
+        participants,
+    })
+}
+
+// MATCH DB INSERT FUNCTIONS
+
 pub fn add_match_reference(
     conn: &Conn,
     match_reference: R::MatchReference,
@@ -42,7 +82,6 @@ pub fn add_match_reference(
         game_id: match_reference.game_id,
         summoner_id,
         role: match_reference.role,
-        season: match_reference.season,
         platform_id: match_reference.platform_id,
         champion: match_reference.champion.identifier(),
         lane: match_reference.lane,
@@ -58,10 +97,18 @@ pub fn get_match_details(conn: &Conn, game_id: i64) -> Result<Match, Error> {
     matches.filter(m::game_id.eq(game_id)).get_result(conn)
 }
 
+fn get_season_from_version(version: &str) -> i16 {
+    if let Some(patch) = version.split(".").next() {
+        patch.parse().unwrap_or(i16::MAX)
+    } else {
+        i16::MAX
+    }
+}
+
 pub fn add_match_details(conn: &Conn, match_details: R::Match) -> Result<Match, Error> {
     let queue: u16 = match_details.queue_id.into();
-    let season: u8 = match_details.season_id.into();
     let map: u8 = match_details.map_id.into();
+    let season_id = get_season_from_version(&match_details.game_version);
     let new_match = NewMatch {
         game_id: match_details.game_id,
         queue_id: queue as i16,
@@ -69,7 +116,7 @@ pub fn add_match_details(conn: &Conn, match_details: R::Match) -> Result<Match, 
         game_duration: match_details.game_duration,
         platform_id: match_details.platform_id,
         game_creation: match_details.game_creation,
-        season_id: season.into(),
+        season_id,
         game_version: match_details.game_version,
         map_id: map.into(),
         game_mode: match_details.game_mode.into(),
@@ -84,7 +131,15 @@ pub fn add_match_details(conn: &Conn, match_details: R::Match) -> Result<Match, 
     let mut md = match_details.participant_identities.into_iter();
     for participant in match_details.participants {
         let identity = md.find(|p| p.participant_id == participant.participant_id);
-        add_participant(conn, match_details.game_id, participant, identity);
+        add_participant(
+            conn,
+            match_details.game_id,
+            match_details.game_duration,
+            participant,
+            identity,
+            queue,
+            season_id,
+        );
     }
 
     game
@@ -119,8 +174,11 @@ fn add_match_team_stats(conn: &Conn, game_id: i64, stats: R::TeamStats) {
 fn add_participant(
     conn: &Conn,
     game_id: i64,
+    game_duration: i64,
     participant: R::Participant,
     identity: Option<R::ParticipantIdentity>,
+    queue_id: u16,
+    season_id: i16,
 ) {
     let team: u8 = participant.team_id.into();
     let summoner_id = match identity {
@@ -141,18 +199,32 @@ fn add_participant(
         spell2_id: participant.spell2_id,
         highest_achieved_season_tier: participant.highest_achieved_season_tier.map(|t| t.into()),
     };
-    let new_participant = insert_into(participants)
+    let new_participant = insert_into(p::participants)
         .values(new_participant)
         .get_result(conn)
         .unwrap();
 
-    add_participant_stats(conn, &new_participant, participant.stats);
+    add_participant_stats(
+        conn,
+        &new_participant,
+        participant.stats,
+        summoner_id,
+        game_id,
+        game_duration,
+        queue_id,
+        season_id,
+    );
 }
 
 fn add_participant_stats(
     conn: &Conn,
     participant: &Participant,
     participant_stats: R::ParticipantStats,
+    summoner_id: Option<i32>,
+    game_id: i64,
+    game_duration: i64,
+    queue_id: u16,
+    season_id: i16,
 ) {
     let new_participant_stats_general = NewParticipantStatsGeneral {
         participant_id: participant.id,
@@ -213,6 +285,45 @@ fn add_participant_stats(
         .values(new_participant_stats_kills)
         .execute(conn)
         .unwrap();
+
+    if let Some(summoner_id) = summoner_id {
+        for record_type in RecordType::iter() {
+            let game_value = record_type.get_value(&participant_stats, game_duration);
+            let record_int = record_type as i16;
+            let record: Result<Option<(i32, f32)>, Error> = r::records
+                .inner_join(matches)
+                .select((r::id, r::value))
+                .filter(r::record_type.eq(record_int))
+                .filter(r::summoner_id.eq(summoner_id))
+                .filter(m::queue_id.eq(queue_id as i16))
+                .filter(m::season_id.eq(season_id))
+                .get_result(conn)
+                .optional();
+            match record {
+                Ok(Some((id, value))) => {
+                    if value < game_value {
+                        diesel::update(r::records.filter(r::id.eq(id)))
+                            .set((r::value.eq(game_value), r::game_id.eq(game_id)))
+                            .execute(conn)
+                            .unwrap();
+                    }
+                }
+                Ok(None) => {
+                    let record = NewRecord {
+                        game_id,
+                        summoner_id,
+                        record_type: record_int,
+                        value: game_value,
+                    };
+                    insert_into(r::records)
+                        .values(record)
+                        .execute(conn)
+                        .unwrap();
+                }
+                Err(_) => {}
+            };
+        }
+    }
 
     let new_participant_stats_damage = NewParticipantStatsDamage {
         participant_id: participant.id,

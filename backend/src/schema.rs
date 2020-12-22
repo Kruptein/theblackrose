@@ -10,7 +10,6 @@ table! {
         game_id -> Int8,
         summoner_id -> Int4,
         role -> Nullable<Text>,
-        season -> Int4,
         platform_id -> Text,
         champion -> Text,
         queue -> Int4,
@@ -154,6 +153,16 @@ table! {
 }
 
 table! {
+    records (id) {
+        id -> Int4,
+        summoner_id -> Int4,
+        game_id -> Int8,
+        record_type -> Int2,
+        value -> Float4,
+    }
+}
+
+table! {
     summoners (id) {
         id -> Int4,
         account_id -> Text,
@@ -208,6 +217,8 @@ joinable!(participant_stats_scores -> participants (participant_id));
 joinable!(participant_stats_utility -> participants (participant_id));
 joinable!(participants -> matches (game_id));
 joinable!(participants -> summoners (summoner_id));
+joinable!(records -> matches (game_id));
+joinable!(records -> summoners (summoner_id));
 joinable!(team_stats -> matches (game_id));
 
 allow_tables_to_appear_in_same_query!(
@@ -220,6 +231,7 @@ allow_tables_to_appear_in_same_query!(
     participant_stats_scores,
     participant_stats_utility,
     participants,
+    records,
     summoners,
     team_stats,
     users,

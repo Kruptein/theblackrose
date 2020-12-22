@@ -25,4 +25,6 @@ reqwest = "0.10.8"
 riven = "1.10.3"
 serde = "1.0.117"
 serde_json = "1.0.59"
+strum = "0.20.0"
+strum_macros = "0.20.1"
 tokio = { version = "0.2", features = ["full"] }

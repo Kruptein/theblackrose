@@ -200,7 +200,10 @@ export enum Queue {
 
 const friendlyQueueNames: Record<number, string> = {
     0: "Custom",
+    420: "Ranked Solo",
+    440: "Ranked Flex",
     450: "Aram",
+    900: "URF",
     1300: "Nexus Blitz",
 };
 

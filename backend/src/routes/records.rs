@@ -2,34 +2,28 @@ use actix_web::{get, web, HttpResponse, Responder};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 
 use crate::{
-    auth::helpers::get_user_from_cache, handlers::connections as h,
-    handlers::users::get_user_by_id, AppState,
+    auth::helpers::get_user_from_cache,
+    handlers::{records::get_connection_records, users::get_user_by_id},
+    AppState,
 };
 
-// Ideally we would just be able to use Option<Vec<String>> here,
-// but I couldn't get it to work. The function gets called when passing a ?names[]=test, but the query itself remains empty
 #[derive(Deserialize)]
-pub struct MatchFilter {
+pub struct RecordFilter {
     names: Option<String>,
-    start: Option<i64>,
 }
 
-impl MatchFilter {
+impl RecordFilter {
     pub fn get_names(&self) -> Option<Vec<String>> {
         self.names
             .as_ref()
             .map(|names| names.split(",").map(|name| name.to_owned()).collect())
     }
-
-    pub fn get_start_time(&self) -> Option<i64> {
-        self.start
-    }
 }
 
-#[get("/matches/")]
-pub async fn get_matches(
+#[get("/records/")]
+pub async fn get_records(
     data: web::Data<AppState>,
-    query: web::Query<MatchFilter>,
+    query: web::Query<RecordFilter>,
     auth: BearerAuth,
 ) -> impl Responder {
     let db_pool = &data.db_conn;
@@ -40,13 +34,13 @@ pub async fn get_matches(
             let user = move || get_user_by_id(&db_conn, user);
             let user = web::block(user).await.unwrap();
             let db_conn = db_pool.get().unwrap();
-            match web::block(move || h::get_connection_matches(&db_conn, user, query.0)).await {
-                Ok(matches) => match serde_json::to_string(&matches) {
+            match web::block(move || get_connection_records(&db_conn, user, query.0)).await {
+                Ok(records) => match serde_json::to_string(&records) {
                     Ok(data) => HttpResponse::Ok().json(data),
                     Err(_) => HttpResponse::InternalServerError().finish(),
                 },
                 Err(e) => {
-                    println!("Get matches error: {:?}", e);
+                    println!("Get records error: {:?}", e);
                     HttpResponse::InternalServerError().finish()
                 }
             }
