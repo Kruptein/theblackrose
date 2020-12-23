@@ -3,7 +3,7 @@ use strum_macros::*;
 
 use crate::schema::*;
 
-#[derive(EnumIter, Debug, Deserialize, PartialEq)]
+#[derive(EnumIter, Clone, Debug, Deserialize, Display, PartialEq)]
 pub enum RecordType {
     TotalMinionsKilled,
     Kills,

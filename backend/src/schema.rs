@@ -34,6 +34,15 @@ table! {
 }
 
 table! {
+    notifications (id) {
+        id -> Int4,
+        user_id -> Int4,
+        title -> Text,
+        message -> Text,
+    }
+}
+
+table! {
     participant_stats_damage (participant_id) {
         participant_id -> Int4,
         true_damage_dealt -> Int8,
@@ -210,6 +219,7 @@ table! {
 joinable!(connections -> summoners (summoner_id));
 joinable!(connections -> users (user_id));
 joinable!(match_references -> summoners (summoner_id));
+joinable!(notifications -> users (user_id));
 joinable!(participant_stats_damage -> participants (participant_id));
 joinable!(participant_stats_general -> participants (participant_id));
 joinable!(participant_stats_kills -> participants (participant_id));
@@ -225,6 +235,7 @@ allow_tables_to_appear_in_same_query!(
     connections,
     match_references,
     matches,
+    notifications,
     participant_stats_damage,
     participant_stats_general,
     participant_stats_kills,

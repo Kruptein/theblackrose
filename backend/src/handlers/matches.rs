@@ -24,11 +24,11 @@ use crate::{
     schema::participant_stats_utility::dsl::participant_stats_utility,
     schema::participants::dsl::{self as p},
     schema::records::dsl::{self as r},
-    schema::summoners::dsl::summoners,
+    schema::summoners::dsl::{self as s},
     schema::team_stats::dsl::team_stats,
 };
 
-use super::summoners::get_or_add_partial_summoner;
+use super::{notifications::send_connection_notification, summoners::get_or_add_partial_summoner};
 
 pub fn get_match_reference(
     conn: &Conn,
@@ -51,7 +51,7 @@ pub fn get_game_info(game_id: i64, conn: &Conn) -> Result<MatchFeedElement, Erro
     )> = p::participants
         .inner_join(psg::participant_stats_general)
         .inner_join(psk::participant_stats_kills)
-        .inner_join(summoners)
+        .inner_join(s::summoners)
         .filter(p::game_id.eq(game_id))
         .order_by(psg::win)
         .get_results(conn)?;
@@ -289,7 +289,7 @@ fn add_participant_stats(
     if let Some(summoner_id) = summoner_id {
         for record_type in RecordType::iter() {
             let game_value = record_type.get_value(&participant_stats, game_duration);
-            let record_int = record_type as i16;
+            let record_int = record_type.clone() as i16;
             let record: Result<Option<(i32, f32)>, Error> = r::records
                 .inner_join(matches)
                 .select((r::id, r::value))
@@ -299,6 +299,7 @@ fn add_participant_stats(
                 .filter(m::season_id.eq(season_id))
                 .get_result(conn)
                 .optional();
+
             match record {
                 Ok(Some((id, value))) => {
                     if value < game_value {
@@ -306,6 +307,43 @@ fn add_participant_stats(
                             .set((r::value.eq(game_value), r::game_id.eq(game_id)))
                             .execute(conn)
                             .unwrap();
+
+                        let is_all_time_record: Result<i64, Error> = r::records
+                            .inner_join(matches)
+                            .filter(r::record_type.eq(record_int))
+                            .filter(r::summoner_id.eq(summoner_id))
+                            .filter(m::queue_id.eq(queue_id as i16))
+                            .filter(r::value.gt(game_value))
+                            .count()
+                            .get_result(conn);
+
+                        let summoner_name: String = s::summoners
+                            .select(s::name)
+                            .filter(s::id.eq(summoner_id))
+                            .get_result(conn)
+                            .unwrap();
+
+                        if is_all_time_record.unwrap_or(0) > 0 {
+                            send_connection_notification(
+                                conn,
+                                summoner_id,
+                                format!("New all time record for {}", summoner_name),
+                                format!(
+                                    "{} improved their \"{}\" record from {} to {}!",
+                                    summoner_name, record_type, value, game_value
+                                ),
+                            );
+                        } else {
+                            send_connection_notification(
+                                conn,
+                                summoner_id,
+                                format!("New season record for {}", summoner_name),
+                                format!(
+                                    "{} improved their \"{}\" record from {} to {}!",
+                                    summoner_name, record_type, value, game_value
+                                ),
+                            );
+                        }
                     }
                 }
                 Ok(None) => {
