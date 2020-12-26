@@ -12,8 +12,9 @@ export default defineComponent({
 
         async function onSubmit() {
             message.value = "Submitting to server";
-            const headers = await getAuthHeader();
-            const data = await fetch(backendUrl(`/api/connections/${summoner.value}/`), headers);
+            const options: { method?: string; headers: { Authorization: string } } = await getAuthHeader();
+            options.method = "POST";
+            const data = await fetch(backendUrl(`/api/connections/${summoner.value}/`), options);
             if (data.status === 201) {
                 message.value = "Successfully added connection. Matches are being processed, this can take some time.";
             } else if (data.status === 404) {
