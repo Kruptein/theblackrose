@@ -7,24 +7,24 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix = "0.10.0"
-actix-cors = "0.5.1"
-actix-files = "0.4.0"
-actix-web = "3.2.0"
-actix-web-httpauth = "0.5.0"
+actix = "0.11.0-beta.1"
+actix-cors = { git = "https://github.com/andy128k/actix-extras", branch="update-dependencies" }
+actix-files = "0.6.0-beta.1"
+actix-web = "4.0.0-beta.1"
+actix-web-httpauth = { git = "https://github.com/andy128k/actix-extras", branch="update-dependencies" }
 base64 = "0.13.0"
-chrono = {version="0.4.19", features=["serde"]}
+chrono = { version = "0.4.19", features = ["serde"] }
 derive_more = "0.99.11"
-diesel = { version = "1.4.5", features= ["chrono", "postgres", "r2d2"] }
+diesel = { version = "1.4.5", features = ["chrono", "postgres", "r2d2"] }
 dotenv = "0.15.0"
-env_logger = "0.8.1"
+env_logger = "0.8.2"
 jsonwebtoken = "7.2.0"
-log = "0.4.11"
+log = "0.4.14"
 r2d2 = "0.8.9"
 reqwest = "0.11.0"
 riven = "1.11.1"
-serde = "1.0.117"
-serde_json = "1.0.59"
+serde = "1.0.123"
+serde_json = "1.0.61"
 strum = "0.20.0"
 strum_macros = "0.20.1"
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "1.1.0", features = ["full"] }
