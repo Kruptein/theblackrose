@@ -73,7 +73,10 @@ pub fn get_connection_matches(
 
     let mut match_collection: Vec<MatchFeedElement> = vec![];
     for reference in references {
-        match_collection.push(get_game_info(reference.0.game_id, conn)?);
+        match get_game_info(reference.0.game_id, conn) {
+            Ok(data) => match_collection.push(data),
+            Err(err) => println!("{}", err),
+        }
     }
     // println!("{}", serde_json::to_string(&match_collection).unwrap());
     Ok(match_collection)
