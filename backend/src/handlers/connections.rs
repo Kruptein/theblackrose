@@ -75,7 +75,10 @@ pub fn get_connection_matches(
     for reference in references {
         match get_game_info(reference.0.game_id, conn) {
             Ok(data) => match_collection.push(data),
-            Err(err) => println!("{}", err),
+            Err(err) => println!(
+                "Could not get game info for {} ({})",
+                reference.0.game_id, err
+            ),
         }
     }
     // println!("{}", serde_json::to_string(&match_collection).unwrap());
