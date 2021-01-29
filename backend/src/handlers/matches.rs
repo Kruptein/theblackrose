@@ -323,7 +323,7 @@ fn add_participant_stats(
                             .get_result(conn)
                             .unwrap();
 
-                        if is_all_time_record.unwrap_or(0) > 0 {
+                        if is_all_time_record.unwrap_or(0) == 0 {
                             send_connection_notification(
                                 conn,
                                 summoner_id,
