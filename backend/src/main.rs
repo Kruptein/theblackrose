@@ -33,7 +33,7 @@ use riven::RiotApi;
 use routes::{
     connections::{add_connection, get_connections, refresh_connection},
     matches::get_matches,
-    notifications::get_notifications,
+    notifications::{get_notifications, remove_notification},
     records::get_records,
 };
 use tokio::sync::{Mutex, RwLock};
@@ -94,6 +94,7 @@ fn main() -> std::io::Result<()> {
                         .service(get_matches)
                         .service(get_records)
                         .service(get_notifications)
+                        .service(remove_notification)
                         .service(refresh_connection),
                 )
         })

@@ -1,4 +1,4 @@
-use diesel::{insert_into, prelude::*, result::Error, RunQueryDsl};
+use diesel::{delete, insert_into, prelude::*, result::Error, RunQueryDsl};
 
 use crate::{
     db::Conn,
@@ -34,4 +34,17 @@ pub fn get_notifications(conn: &Conn, user_id: i32) -> Result<Vec<Notification>,
     n::notifications
         .filter(n::user_id.eq(user_id))
         .get_results(conn)
+}
+
+pub fn owns_notification(conn: &Conn, notification_id: i32, user_id: i32) -> Result<bool, Error> {
+    let count: i64 = n::notifications
+        .filter(n::id.eq(notification_id))
+        .filter(n::user_id.eq(user_id))
+        .count()
+        .get_result(conn)?;
+    Ok(count > 0)
+}
+
+pub fn remove_notification(conn: &Conn, notification_id: i32) -> Result<usize, Error> {
+    delete(n::notifications.filter(n::id.eq(notification_id))).execute(conn)
 }

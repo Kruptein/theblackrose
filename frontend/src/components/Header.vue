@@ -16,12 +16,24 @@ export default {
             notifications.value = JSON.parse(await response.json());
         };
 
+        const removeNotification = async (sliceId: number) => {
+            const notificationId = notifications.value[sliceId].id;
+            const headers = await getAuthHeader();
+            const response = await fetch(backendUrl(`/api/notifications/${notificationId}/`), {
+                method: "delete",
+                ...headers,
+            });
+            if (response.status === 200) {
+                notifications.value = notifications.value.filter(n => n.id !== notificationId);
+            }
+        };
+
         onMounted(() => {
             setInterval(getNotifications, 15 * 60 * 1000);
             getNotifications();
         });
 
-        return { auth, backendUrl, notifications, showNotifications };
+        return { auth, backendUrl, notifications, removeNotification, showNotifications };
     },
 };
 </script>
@@ -51,11 +63,25 @@ export default {
                 </template>
             </ul>
         </nav>
-        <div v-if="showNotifications" id="notifications">
-            <div class="notification" v-for="notification of notifications" :key="notification.id">
-                {{ notification.title }}
+        <template v-if="showNotifications">
+            <div id="notifications">
+                <div
+                    class="notification"
+                    v-for="[i, notification] of notifications.slice(0, 10).entries()"
+                    :key="notification.id"
+                >
+                    <div class="remove" title="Remove notification" @click="removeNotification(i)">X</div>
+                    <div class="content">
+                        <div class="title">{{ notification.title }}</div>
+                        <div class="message">{{ notification.message }}</div>
+                    </div>
+                </div>
+                <div v-if="notifications.length === 0" id="empty">
+                    No new notifications :)
+                </div>
             </div>
-        </div>
+            <div id="notifications-footer"></div>
+        </template>
     </div>
 </template>
 
@@ -69,6 +95,8 @@ export default {
     background-color: #df4a5a;
     color: #fff;
     border-radius: 0 0 20px 20px;
+    border: solid 2px white;
+    border-top: 0;
     padding: 0;
 }
 
@@ -106,7 +134,7 @@ nav {
             background-color: white;
         }
 
-        :not(&.showNotifications) {
+        &:not(&.showNotifications) {
             &:first-child {
                 border-bottom-left-radius: 20px;
             }
@@ -119,14 +147,67 @@ nav {
 }
 
 #notifications {
-    padding: 10px;
-    background-color: #fff;
-    color: #df4a5a;
-    overflow: auto;
     max-height: 50vh;
+    border-bottom: 0;
+    border-top: dashed 2px white;
+
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+
+    #empty {
+        padding-top: 20px;
+    }
 
     .notification {
-        padding: 10px 0;
+        display: flex;
+        align-items: center;
+
+        .remove {
+            padding: 15px 10px;
+            display: none;
+            font-weight: bold;
+            background-color: #df4a5a;
+            user-select: none;
+        }
+
+        &:hover {
+            border-top: solid 2px white;
+            border-bottom: solid 2px white;
+
+            .remove {
+                display: block;
+
+                &:hover {
+                    cursor: pointer;
+                }
+            }
+
+            .content {
+                color: #d22537;
+                background-color: #fff;
+            }
+        }
+
+        .content {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+
+            .title {
+                align-self: flex-start;
+                font-weight: bold;
+            }
+
+            .message {
+                align-self: flex-end;
+            }
+        }
     }
+}
+
+#notifications-footer {
+    height: 20px;
 }
 </style>
