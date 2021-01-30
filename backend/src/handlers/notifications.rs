@@ -1,8 +1,8 @@
-use diesel::{insert_into, prelude::*, RunQueryDsl};
+use diesel::{insert_into, prelude::*, result::Error, RunQueryDsl};
 
 use crate::{
     db::Conn,
-    models::notifications::NewNotification,
+    models::notifications::{NewNotification, Notification},
     schema::connections::dsl::{self as c},
     schema::notifications::dsl::{self as n},
     schema::users::dsl::{self as u},
@@ -28,4 +28,10 @@ pub fn send_connection_notification(conn: &Conn, summoner_id: i32, title: String
         .values(values)
         .execute(conn)
         .unwrap();
+}
+
+pub fn get_notifications(conn: &Conn, user_id: i32) -> Result<Vec<Notification>, Error> {
+    n::notifications
+        .filter(n::user_id.eq(user_id))
+        .get_results(conn)
 }
