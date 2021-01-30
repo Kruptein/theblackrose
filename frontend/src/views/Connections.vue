@@ -2,6 +2,7 @@
 import { defineComponent, onMounted, ref } from "vue";
 
 import { backendUrl, getAuthHeader } from "../api/utils";
+import { getMostRecentPatch } from "../ddragon";
 
 export default defineComponent({
     name: "Connections",
@@ -11,7 +12,7 @@ export default defineComponent({
         const connections = ref<[string, number][]>([]);
 
         const getSummonerIconImage = (iconId: number): string => {
-            return backendUrl(`/ddragon/10.23.1/img/profileicon/${iconId}.png`);
+            return backendUrl(`/ddragon/${getMostRecentPatch()}/img/profileicon/${iconId}.png`);
         };
 
         onMounted(async () => {
