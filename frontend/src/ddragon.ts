@@ -3,11 +3,12 @@ import { getSummonerFromId } from "./models/spells";
 import { patches } from "./state";
 import { compareVersions } from "./utils";
 
-function getMostRecentPatch(gameVersion: string): string {
-    gameVersion = gameVersion
-        .split(".")
-        .slice(0, 2)
-        .join(".");
+export function getMostRecentPatch(gameVersion?: string): string {
+    gameVersion =
+        gameVersion
+            ?.split(".")
+            .slice(0, 2)
+            .join(".") ?? "999";
     const lastPatch = patches.value[patches.value.length - 1];
     let previousPatch: string | undefined;
     for (const patch of patches.value) {
