@@ -1,8 +1,6 @@
 use riven::models::match_v4::ParticipantStats;
 use strum_macros::*;
 
-use crate::schema::*;
-
 #[derive(EnumIter, Clone, Debug, Deserialize, Display, PartialEq)]
 pub enum RecordType {
     TotalMinionsKilled,
@@ -26,18 +24,9 @@ impl RecordType {
     }
 }
 
-#[derive(Debug, Deserialize, Queryable, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Record {
     pub id: i32,
-    pub summoner_id: i32,
-    pub game_id: i64,
-    pub record_type: i16,
-    pub value: f32,
-}
-
-#[derive(Insertable, Debug)]
-#[table_name = "records"]
-pub struct NewRecord {
     pub summoner_id: i32,
     pub game_id: i64,
     pub record_type: i16,

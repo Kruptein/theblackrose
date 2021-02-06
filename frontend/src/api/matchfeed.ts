@@ -1,3 +1,4 @@
+import { Connection } from "../models/connections";
 import { MatchFeedElement, MatchFeedFilter } from "../models/matchfeed";
 import { backendUrl, getAuthHeader } from "./utils";
 
@@ -5,8 +6,8 @@ export async function fetchConnections(): Promise<string[]> {
     const headers = await getAuthHeader();
     const response = await fetch(backendUrl("/api/connections/"), headers);
 
-    const connectionData: [string, number][] = JSON.parse(await response.json());
-    return connectionData.map((c: [string, number]) => c[0]);
+    const connectionData: Connection[] = JSON.parse(await response.json());
+    return connectionData.map((c: Connection) => c.name);
 }
 
 export async function fetchMatchFeed(filter?: MatchFeedFilter): Promise<MatchFeedElement[]> {
@@ -22,6 +23,10 @@ export async function fetchMatchFeed(filter?: MatchFeedFilter): Promise<MatchFee
     if (queries.length > 0) {
         matchUrl += `?${queries.join("&")}`;
     }
+    console.log("start request");
     const response = await fetch(backendUrl(matchUrl), headers);
-    return JSON.parse(await response.json());
+    console.log("end request");
+    const data = JSON.parse(await response.json());
+    console.log("end json parse");
+    return data;
 }

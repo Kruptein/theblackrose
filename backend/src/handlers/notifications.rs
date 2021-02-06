@@ -1,50 +1,56 @@
-use diesel::{delete, insert_into, prelude::*, result::Error, RunQueryDsl};
+use sqlx::{query, query_as, Error, PgPool};
 
-use crate::{
-    db::Conn,
-    models::notifications::{NewNotification, Notification},
-    schema::connections::dsl::{self as c},
-    schema::notifications::dsl::{self as n},
-    schema::users::dsl::{self as u},
-};
+use crate::models::notifications::Notification;
 
-pub fn send_connection_notification(conn: &Conn, summoner_id: i32, title: String, message: String) {
-    let users: Vec<i32> = c::connections
-        .inner_join(u::users)
-        .select(u::id)
-        .filter(c::summoner_id.eq(summoner_id))
-        .get_results(conn)
-        .unwrap();
-    let mut values: Vec<NewNotification> = Vec::with_capacity(users.len());
+pub async fn send_connection_notification(
+    conn: &PgPool,
+    summoner_id: i32,
+    title: String,
+    message: String,
+) {
+    let users: Vec<i32> = query!("SELECT u.id FROM users u INNER JOIN connections c ON c.user_id = u.id WHERE c.summoner_id = $1", summoner_id).fetch_all(conn).await.unwrap().into_iter().map(|record| record.id).collect();
     for user_id in users.into_iter() {
-        let notification = NewNotification {
+        query!(
+            "INSERT INTO notifications (user_id, title, message) VALUES ($1, $2, $3)",
             user_id,
-            title: title.clone(),
-            message: message.clone(),
-        };
-        values.push(notification);
-    }
-    insert_into(n::notifications)
-        .values(values)
+            title.clone(),
+            message.clone(),
+        )
         .execute(conn)
+        .await
         .unwrap();
+    }
 }
 
-pub fn get_notifications(conn: &Conn, user_id: i32) -> Result<Vec<Notification>, Error> {
-    n::notifications
-        .filter(n::user_id.eq(user_id))
-        .get_results(conn)
+pub async fn get_notifications(conn: &PgPool, user_id: i32) -> Result<Vec<Notification>, Error> {
+    query_as!(
+        Notification,
+        "SELECT * FROM notifications WHERE user_id = $1",
+        user_id
+    )
+    .fetch_all(conn)
+    .await
 }
 
-pub fn owns_notification(conn: &Conn, notification_id: i32, user_id: i32) -> Result<bool, Error> {
-    let count: i64 = n::notifications
-        .filter(n::id.eq(notification_id))
-        .filter(n::user_id.eq(user_id))
-        .count()
-        .get_result(conn)?;
+pub async fn owns_notification(
+    conn: &PgPool,
+    notification_id: i32,
+    user_id: i32,
+) -> Result<bool, Error> {
+    let count = query!(
+        r#"SELECT COUNT(*) as "count!" FROM notifications WHERE id = $1 AND user_id = $2"#,
+        notification_id,
+        user_id
+    )
+    .fetch_one(conn)
+    .await?
+    .count;
     Ok(count > 0)
 }
 
-pub fn remove_notification(conn: &Conn, notification_id: i32) -> Result<usize, Error> {
-    delete(n::notifications.filter(n::id.eq(notification_id))).execute(conn)
+pub async fn remove_notification(conn: &PgPool, notification_id: i32) -> Result<u64, Error> {
+    query!("DELETE FROM notifications WHERE id = $1", notification_id)
+        .execute(conn)
+        .await
+        .map(|result| result.rows_affected())
 }

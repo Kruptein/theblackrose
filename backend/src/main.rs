@@ -6,11 +6,8 @@ mod handlers;
 mod models;
 mod rito;
 mod routes;
-mod schema;
 mod utils;
 
-#[macro_use]
-extern crate diesel;
 #[macro_use]
 extern crate serde;
 
@@ -27,7 +24,7 @@ use actix_web::{
 use actix_web_httpauth::middleware::HttpAuthentication;
 use actor::GameFetchActor;
 use auth::validation::validator;
-use db::{establish_pool, Pool};
+use db::establish_pool;
 use dotenv::dotenv;
 use riven::RiotApi;
 use routes::{
@@ -36,10 +33,11 @@ use routes::{
     notifications::{get_notifications, remove_notification},
     records::get_records,
 };
+use sqlx::PgPool;
 use tokio::sync::{Mutex, RwLock};
 
 pub struct AppState {
-    db_conn: Pool,
+    db_conn: PgPool,
     riot_api: Arc<RiotApi>,
     tokens: RwLock<HashMap<String, i32>>,
     update_task: Addr<GameFetchActor>,
@@ -54,9 +52,9 @@ fn main() -> std::io::Result<()> {
     let system_fut = actix_web::rt::System::run_in_tokio("server", &local_tasks);
 
     local_tasks.block_on(&mut tok_runtime, async {
+        let pool = establish_pool().await.unwrap();
         tokio::task::spawn_local(system_fut);
 
-        let pool = establish_pool();
         let riot_api = Arc::new(rito::create_riot_api());
 
         let actor = GameFetchActor::create(|_| GameFetchActor {
