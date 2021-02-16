@@ -1,0 +1,1779 @@
+{
+  "db": "PostgreSQL",
+  "016f049f72b10a1af1f628751604704e929330f78c44543d0d87d592211e9c53": {
+    "query": "SELECT * FROM matches WHERE game_id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "game_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "queue_id",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 2,
+          "name": "game_type",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "game_duration",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "platform_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "game_creation",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 6,
+          "name": "season_id",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 7,
+          "name": "game_version",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 8,
+          "name": "map_id",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 9,
+          "name": "game_mode",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "043b258b5f8d1cb330a142dfc41ce523a6a38817087eba167cf994d7b9c6b929": {
+    "query": "INSERT INTO records (game_id, summoner_id, record_type, value) VALUES ($1, $2, $3, $4)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int4",
+          "Int2",
+          "Float4"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "07b522adf9409236b3089a3a0cac56a365670ac1c0d586bc5d9cbb1e0569650b": {
+    "query": "SELECT * FROM notifications WHERE user_id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "user_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 2,
+          "name": "title",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "message",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "13ecd15bb77209d3600348bd3863e95d513965643028bb23db34bce2f200d270": {
+    "query": "INSERT INTO participant_stats_general (participant_id, champ_level, win, gold_earned, gold_spent, item0, item1, item2, item3, item4, item5, item6) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int4",
+          "Bool",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "151aeec0146ae9266b703da18e4be6e2f66e959b683aa67b50e0fd14c2f582da": {
+    "query": "SELECT COUNT(*) as \"count!\" FROM notifications WHERE id = $1 AND user_id = $2",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "count!",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int4"
+        ]
+      },
+      "nullable": [
+        null
+      ]
+    }
+  },
+  "1a6f7b539bdf66cac93e71886b7166ad819feb8a69c3819d094f8ae7afacfe72": {
+    "query": "UPDATE summoners SET update_in_progress = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bool"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "1f14df359304bfa5741397ae1b265b484f5a6543405817581e1e3aa233e97723": {
+    "query": "INSERT INTO summoners (account_id, profile_icon_id, revision_date, name, summoner_id, puuid, summoner_level) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "account_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "profile_icon_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 3,
+          "name": "revision_date",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "summoner_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "puuid",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "summoner_level",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 8,
+          "name": "last_match_query_time",
+          "type_info": "Timestamp"
+        },
+        {
+          "ordinal": 9,
+          "name": "update_in_progress",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Int4",
+          "Int8",
+          "Text",
+          "Text",
+          "Text",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        false
+      ]
+    }
+  },
+  "21f404ce3c3bb19a6916ec331c01c28a2f51705e11123de601cf668249698557": {
+    "query": "SELECT * FROM summoners WHERE name = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "account_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "profile_icon_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 3,
+          "name": "revision_date",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "summoner_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "puuid",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "summoner_level",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 8,
+          "name": "last_match_query_time",
+          "type_info": "Timestamp"
+        },
+        {
+          "ordinal": 9,
+          "name": "update_in_progress",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        false
+      ]
+    }
+  },
+  "28f23d9c017df09fd77173759497d231cb16640ea4d7a9add32e446c318efb77": {
+    "query": "UPDATE summoners SET last_match_query_time = $1 WHERE id = $2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Timestamp",
+          "Int4"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "390b95fe6176ecf0a24ad2111124a82a9d456ad5d8aa3cccec720bc3b96cfdd7": {
+    "query": "UPDATE records SET value = $1, game_id = $2 WHERE id = $3",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Float4",
+          "Int8",
+          "Int4"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "3ef5f981ed18308132ef4aca44655ac7ba7ac43f86ae1115f2bd0d9ce16face8": {
+    "query": "SELECT * FROM users WHERE auth0_subject = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "auth0_subject",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "email",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "created_at",
+          "type_info": "Timestamp"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "4012db5837beb07ccbeab2752277e8132b553f2d8c876175ecae4b044aec807e": {
+    "query": "SELECT u.id FROM users u INNER JOIN connections c ON c.user_id = u.id WHERE c.summoner_id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "41c662fe3f1b15c77804b4d9e2db4989e7f46531f255b9f688f58860bf9f8306": {
+    "query": "INSERT INTO participant_stats_utility (participant_id, total_units_healed, total_heal, total_time_crowd_control_dealt, time_c_cing_others, wards_placed, vision_wards_bought_in_game, vision_score, wards_killed, sight_wards_bought_in_game) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int4",
+          "Int8",
+          "Int4",
+          "Int8",
+          "Int4",
+          "Int4",
+          "Int8",
+          "Int4",
+          "Int4"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "4a63d1b68409244a2fe87f544445601152fae221b208b94ec9cf0cbaa8031f98": {
+    "query": "INSERT INTO team_stats (game_id, team_id, tower_kills, rift_herald_kills, first_blood, inhibitor_kills, first_baron, first_dragon, dominion_victory_score, dragon_kills,baron_kills, first_inhibitor, first_tower, vilemaw_kills, first_rift_herald, win) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int2",
+          "Int4",
+          "Int4",
+          "Bool",
+          "Int4",
+          "Bool",
+          "Bool",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Bool",
+          "Bool",
+          "Int4",
+          "Bool",
+          "Text"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "4bbf8325e50cee20a2183daf66c259750d96720657a8fe87fe4ac86f55563f1a": {
+    "query": "SELECT DISTINCT ON(summoner_id) * FROM connections",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "user_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "summoner_id",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "583a139e7c0c31f04919237131abc2381c995a9c327de7343b82ce3fbbd74ded": {
+    "query": "UPDATE summoners SET update_in_progress = $1 WHERE id = $2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bool",
+          "Int4"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "5a73f5c38f023fa6a3eb905ea8b4365c8cef86a68a7d1c07e9ec2411aaac81d5": {
+    "query": "INSERT INTO participant_stats_kills (participant_id, kills, deaths, assists, double_kills, triple_kills, quadra_kills, penta_kills, unreal_kills, largest_multi_kill, largest_killing_spree, killing_sprees, longest_time_spent_living, first_tower_kill, first_tower_assist, first_blood_kill, first_blood_assist, first_inhibitor_kill, first_inhibitor_assist, inhibitor_kills, turret_kills, neutral_minions_killed, neutral_minions_killed_enemy_jungle, neutral_minions_killed_team_jungle, total_minions_killed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Bool",
+          "Bool",
+          "Bool",
+          "Bool",
+          "Bool",
+          "Bool",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "5b5f351196bb6018235de54462f49ccdb0acedccc2d86acaecff1fa656ae801b": {
+    "query": "INSERT INTO participants (game_id, participant_id, summoner_id, champion_id, team_id, spell1_id, spell2_id, highest_achieved_season_tier) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "game_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "participant_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 3,
+          "name": "summoner_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 4,
+          "name": "champion_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "team_id",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 6,
+          "name": "spell1_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 7,
+          "name": "spell2_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 8,
+          "name": "highest_achieved_season_tier",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int4",
+          "Int4",
+          "Text",
+          "Int2",
+          "Int4",
+          "Int4",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  "60577917080effee2f62a55a7a8fdab5e517da985d03d1180bf7c5ef10bbde8f": {
+    "query": "INSERT INTO users (email, auth0_subject, created_at) VALUES ($1, $2, $3) RETURNING *",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "auth0_subject",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "email",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "created_at",
+          "type_info": "Timestamp"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text",
+          "Timestamp"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "63e5fdf9472bf99098f92451a67744dfc783c22cf4e08755ad865c033092fa9f": {
+    "query": "SELECT r.id, r.value FROM records r INNER JOIN matches m USING (game_id) WHERE r.record_type = $1 AND r.summoner_id = $2 AND m.queue_id = $3 AND m.season_id = $4",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "value",
+          "type_info": "Float4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int2",
+          "Int4",
+          "Int2",
+          "Int2"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "6a997579de459be310ca2e91f2ad90b7315cbdac0e2e5d02cd958ad888033fa2": {
+    "query": "SELECT COUNT(*) as \"count!\" FROM records r INNER JOIN matches m USING (game_id) WHERE r.record_type = $1 AND r.summoner_id = $2 AND m.queue_id = $3 AND r.value > $4",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "count!",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int2",
+          "Int4",
+          "Int2",
+          "Float4"
+        ]
+      },
+      "nullable": [
+        null
+      ]
+    }
+  },
+  "6e7714fe495f139198027825f87a32534bb0f6cfaa200e8ccada0f99368d4b16": {
+    "query": "INSERT INTO matches (game_id, queue_id, game_type, game_duration, platform_id, game_creation, season_id, game_version, map_id, game_mode) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "game_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "queue_id",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 2,
+          "name": "game_type",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "game_duration",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "platform_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "game_creation",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 6,
+          "name": "season_id",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 7,
+          "name": "game_version",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 8,
+          "name": "map_id",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 9,
+          "name": "game_mode",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int2",
+          "Text",
+          "Int8",
+          "Text",
+          "Int8",
+          "Int2",
+          "Text",
+          "Int2",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "767863d263f9ebebe35bb9a95e31c8f728840688d500781812ed257e9f9293e6": {
+    "query": "SELECT s.name FROM summoners s INNER JOIN connections c ON c.summoner_id = s.id WHERE c.user_id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "name",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "843923b9a0257cf80f1dff554e7dc8fdfc05f489328e8376513124dfb42996e3": {
+    "query": "SELECT * FROM users WHERE id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "auth0_subject",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "email",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "created_at",
+          "type_info": "Timestamp"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "8511393bd8029b210a580a7f237499c4d48cb95dc7b8ed2167f7909be840304b": {
+    "query": "SELECT * FROM match_references WHERE game_id = $1 AND summoner_id = $2",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "game_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "summoner_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 2,
+          "name": "role",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "platform_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "champion",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "queue",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 6,
+          "name": "lane",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "timestamp",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false
+      ]
+    }
+  },
+  "88b3f06d38eacae7a639d63b62c31d5d3bfd1f97c146c259caf4b75511b9705c": {
+    "query": "SELECT DISTINCT ON(mr.timestamp) mr.* FROM match_references mr INNER JOIN summoners s ON mr.summoner_id = s.id WHERE s.name = any($1) AND mr.timestamp < $2 ORDER BY mr.timestamp DESC LIMIT 10",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "game_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "summoner_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 2,
+          "name": "role",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "platform_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "champion",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "queue",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 6,
+          "name": "lane",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "timestamp",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "TextArray",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false
+      ]
+    }
+  },
+  "90fa2990238daced0c0e1c98fabef8ed11ad5f27712f6913affb290bc4517f70": {
+    "query": "INSERT INTO participant_stats_damage (participant_id, true_damage_dealt, true_damage_dealt_to_champions, true_damage_taken, physical_damage_dealt, physical_damage_dealt_to_champions, physical_damage_taken, magic_damage_dealt, magic_damage_dealt_to_champions, magical_damage_taken, total_damage_dealt, total_damage_dealt_to_champions, total_damage_taken, damage_dealt_to_turrets, damage_dealt_to_objectives, damage_self_mitigated, largest_critical_strike) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int8",
+          "Int8",
+          "Int8",
+          "Int8",
+          "Int8",
+          "Int8",
+          "Int8",
+          "Int8",
+          "Int8",
+          "Int8",
+          "Int8",
+          "Int8",
+          "Int8",
+          "Int8",
+          "Int8",
+          "Int4"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "9948721c97f420a236bd3fac249346af336bb18efebdf082745be840be06fc15": {
+    "query": "SELECT name, profile_icon_id FROM connections c INNER JOIN summoners s ON c.summoner_id = s.id WHERE c.user_id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 1,
+          "name": "profile_icon_id",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "a6f086e54a8ed79a118fea3886e1bdc6a29cf968246516f6b754c4f838617259": {
+    "query": "SELECT s.id FROM summoners s INNER JOIN connections c ON c.summoner_id = s.id WHERE c.user_id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "a71399b03fae473f977fabffb7cf4f5958a8e094cf3e54a46d6f418d436f4ecd": {
+    "query": "INSERT INTO summoners (account_id, profile_icon_id, name, summoner_id) VALUES ($1, $2, $3, $4) RETURNING *",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "account_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "profile_icon_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 3,
+          "name": "revision_date",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "summoner_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "puuid",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "summoner_level",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 8,
+          "name": "last_match_query_time",
+          "type_info": "Timestamp"
+        },
+        {
+          "ordinal": 9,
+          "name": "update_in_progress",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Int4",
+          "Text",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        false
+      ]
+    }
+  },
+  "d3e1434a27fdae6439017b115efb99c353d9f032e5c59f64bff58ef27348c9d4": {
+    "query": "UPDATE summoners SET profile_icon_id = $1, name = $2, revision_date = $3, summoner_level = $4, puuid = $5 WHERE id = $6",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Text",
+          "Int8",
+          "Int8",
+          "Text",
+          "Int4"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "d5412af57c998793ab7dc0d28b6ef259839211bfa4a712486184bb92fca1e281": {
+    "query": "SELECT p as \"participant!: Participant\", psg as \"general!: ParticipantStatsGeneral\", psk as \"kills!: ParticipantStatsKills\", s as \"summoner!: Summoner\" FROM participants p INNER JOIN participant_stats_general psg ON psg.participant_id = p.id INNER JOIN participant_stats_kills psk ON psk.participant_id = p.id INNER JOIN summoners s ON p.summoner_id = s.id WHERE p.game_id = $1 ORDER BY psg.win",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "participant!: Participant",
+          "type_info": {
+            "Custom": {
+              "name": "participants",
+              "kind": {
+                "Composite": [
+                  [
+                    "id",
+                    "Int4"
+                  ],
+                  [
+                    "game_id",
+                    "Int8"
+                  ],
+                  [
+                    "participant_id",
+                    "Int4"
+                  ],
+                  [
+                    "summoner_id",
+                    "Int4"
+                  ],
+                  [
+                    "champion_id",
+                    "Text"
+                  ],
+                  [
+                    "team_id",
+                    "Int2"
+                  ],
+                  [
+                    "spell1_id",
+                    "Int4"
+                  ],
+                  [
+                    "spell2_id",
+                    "Int4"
+                  ],
+                  [
+                    "highest_achieved_season_tier",
+                    "Text"
+                  ]
+                ]
+              }
+            }
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "general!: ParticipantStatsGeneral",
+          "type_info": {
+            "Custom": {
+              "name": "participant_stats_general",
+              "kind": {
+                "Composite": [
+                  [
+                    "participant_id",
+                    "Int4"
+                  ],
+                  [
+                    "champ_level",
+                    "Int4"
+                  ],
+                  [
+                    "win",
+                    "Bool"
+                  ],
+                  [
+                    "gold_earned",
+                    "Int4"
+                  ],
+                  [
+                    "gold_spent",
+                    "Int4"
+                  ],
+                  [
+                    "item0",
+                    "Int4"
+                  ],
+                  [
+                    "item1",
+                    "Int4"
+                  ],
+                  [
+                    "item2",
+                    "Int4"
+                  ],
+                  [
+                    "item3",
+                    "Int4"
+                  ],
+                  [
+                    "item4",
+                    "Int4"
+                  ],
+                  [
+                    "item5",
+                    "Int4"
+                  ],
+                  [
+                    "item6",
+                    "Int4"
+                  ]
+                ]
+              }
+            }
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "kills!: ParticipantStatsKills",
+          "type_info": {
+            "Custom": {
+              "name": "participant_stats_kills",
+              "kind": {
+                "Composite": [
+                  [
+                    "participant_id",
+                    "Int4"
+                  ],
+                  [
+                    "kills",
+                    "Int4"
+                  ],
+                  [
+                    "deaths",
+                    "Int4"
+                  ],
+                  [
+                    "assists",
+                    "Int4"
+                  ],
+                  [
+                    "double_kills",
+                    "Int4"
+                  ],
+                  [
+                    "triple_kills",
+                    "Int4"
+                  ],
+                  [
+                    "quadra_kills",
+                    "Int4"
+                  ],
+                  [
+                    "penta_kills",
+                    "Int4"
+                  ],
+                  [
+                    "unreal_kills",
+                    "Int4"
+                  ],
+                  [
+                    "largest_multi_kill",
+                    "Int4"
+                  ],
+                  [
+                    "largest_killing_spree",
+                    "Int4"
+                  ],
+                  [
+                    "killing_sprees",
+                    "Int4"
+                  ],
+                  [
+                    "longest_time_spent_living",
+                    "Int4"
+                  ],
+                  [
+                    "first_tower_kill",
+                    "Bool"
+                  ],
+                  [
+                    "first_tower_assist",
+                    "Bool"
+                  ],
+                  [
+                    "first_blood_kill",
+                    "Bool"
+                  ],
+                  [
+                    "first_blood_assist",
+                    "Bool"
+                  ],
+                  [
+                    "first_inhibitor_kill",
+                    "Bool"
+                  ],
+                  [
+                    "first_inhibitor_assist",
+                    "Bool"
+                  ],
+                  [
+                    "inhibitor_kills",
+                    "Int4"
+                  ],
+                  [
+                    "turret_kills",
+                    "Int4"
+                  ],
+                  [
+                    "neutral_minions_killed",
+                    "Int4"
+                  ],
+                  [
+                    "neutral_minions_killed_enemy_jungle",
+                    "Int4"
+                  ],
+                  [
+                    "neutral_minions_killed_team_jungle",
+                    "Int4"
+                  ],
+                  [
+                    "total_minions_killed",
+                    "Int4"
+                  ]
+                ]
+              }
+            }
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "summoner!: Summoner",
+          "type_info": {
+            "Custom": {
+              "name": "summoners",
+              "kind": {
+                "Composite": [
+                  [
+                    "id",
+                    "Int4"
+                  ],
+                  [
+                    "account_id",
+                    "Text"
+                  ],
+                  [
+                    "profile_icon_id",
+                    "Int4"
+                  ],
+                  [
+                    "revision_date",
+                    "Int8"
+                  ],
+                  [
+                    "name",
+                    "Text"
+                  ],
+                  [
+                    "summoner_id",
+                    "Text"
+                  ],
+                  [
+                    "puuid",
+                    "Text"
+                  ],
+                  [
+                    "summoner_level",
+                    "Int8"
+                  ],
+                  [
+                    "last_match_query_time",
+                    "Timestamp"
+                  ],
+                  [
+                    "update_in_progress",
+                    "Bool"
+                  ]
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "d7b0e1e69339337c740c5b5049da58816196a69149d36c32481455caacd3d6ac": {
+    "query": "INSERT INTO match_references (game_id, summoner_id, role, platform_id, champion, lane, queue, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "game_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "summoner_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 2,
+          "name": "role",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "platform_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "champion",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "queue",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 6,
+          "name": "lane",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "timestamp",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int4",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Int4",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false
+      ]
+    }
+  },
+  "da875f895153d7d65fde13a48fb8586c33364731b64195c57313380ac5581ee3": {
+    "query": "SELECT * FROM summoners WHERE account_id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "account_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "profile_icon_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 3,
+          "name": "revision_date",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "summoner_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "puuid",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "summoner_level",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 8,
+          "name": "last_match_query_time",
+          "type_info": "Timestamp"
+        },
+        {
+          "ordinal": 9,
+          "name": "update_in_progress",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        false
+      ]
+    }
+  },
+  "db2dc481460b6dab88b4d1902d6dc9f9dd37960cade4d0cc884ada30cbd06f61": {
+    "query": "SELECT * FROM summoners WHERE id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "account_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "profile_icon_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 3,
+          "name": "revision_date",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "summoner_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "puuid",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "summoner_level",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 8,
+          "name": "last_match_query_time",
+          "type_info": "Timestamp"
+        },
+        {
+          "ordinal": 9,
+          "name": "update_in_progress",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        false
+      ]
+    }
+  },
+  "dde111f0c24830b543e0e9689b49bdc09b34ae9300610d113c967cb0e59bece0": {
+    "query": "SELECT name FROM summoners WHERE id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "name",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "e185203cf84e43b801dfb23b4159e34aeaef1154dcd3d6811ab504915497ccf7": {
+    "query": "DELETE FROM notifications WHERE id = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "e365ae4e03c0179df1126bb368951c4cbc8997e5bf8438c5140c99f9f3e632e4": {
+    "query": "INSERT INTO participant_stats_scores (participant_id, combat_player_score, \n        objective_player_score, total_player_score, total_score_rank, team_objective, player_score0, player_score1, player_score2, player_score3, player_score4, player_score5, player_score6, player_score7, player_score8, player_score9) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Int4"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "eafde49399830f6556238ea6d4fdf8a5533f66ef700d504b0a6a2d292af2d900": {
+    "query": "INSERT INTO notifications (user_id, title, message) VALUES ($1, $2, $3)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Text",
+          "Text"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "f77e3a2242e989b0d9d004b050c0edb4c1505102653e28c5f019f15b92bdf1f0": {
+    "query": "INSERT INTO connections (user_id, summoner_id) VALUES ($1, $2) RETURNING *",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "user_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "summoner_id",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "fce78f1e1dd4a253fbc992e9abb6065ef0226c93b331521e6efdbbede26f07d1": {
+    "query": "SELECT s.id as \"id!: i32\" FROM summoners s INNER JOIN connections c ON c.summoner_id = s.id WHERE s.name = any($1)",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id!: i32",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "TextArray"
+        ]
+      },
+      "nullable": [
+        true
+      ]
+    }
+  }
+}
