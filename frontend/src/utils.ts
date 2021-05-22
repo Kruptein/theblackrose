@@ -14,3 +14,8 @@ export function compareVersions(a: string, b: string): number {
     }
     return 0;
 }
+
+export function alphSort(a: string, b: string): number {
+    if (a.toLowerCase() < b.toLowerCase()) return -1;
+    else return 1;
+}

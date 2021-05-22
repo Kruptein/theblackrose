@@ -12,6 +12,7 @@ use crate::{
 pub struct MatchFilter {
     names: Option<String>,
     start: Option<i64>,
+    length: Option<i8>,
 }
 
 impl MatchFilter {
@@ -23,6 +24,10 @@ impl MatchFilter {
 
     pub fn get_start_time(&self) -> Option<i64> {
         self.start
+    }
+
+    pub fn get_length(&self) -> i8 {
+        self.length.unwrap_or(10)
     }
 }
 

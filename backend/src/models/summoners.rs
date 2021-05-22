@@ -1,5 +1,7 @@
 #[derive(Serialize)]
+#[serde(rename_all(serialize = "camelCase"))]
 pub struct Summoner {
+    #[serde(skip)]
     pub id: i32,
     pub account_id: String,
     pub profile_icon_id: i32,

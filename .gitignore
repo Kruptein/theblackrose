@@ -2,3 +2,4 @@ ddragon/*
 !ddragon/0.png
 !ddragon/feather.png
 !ddragon/pull-patch.sh
+target/*

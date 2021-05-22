@@ -78,7 +78,8 @@ pub async fn get_connection_matches(
         None => i64::MAX,
     };
 
-    let references = query_as!(MatchReference, r#"SELECT DISTINCT ON(mr.timestamp) mr.* FROM match_references mr INNER JOIN summoners s ON mr.summoner_id = s.id WHERE s.name = any($1) AND mr.timestamp < $2 ORDER BY mr.timestamp DESC LIMIT 10"#, &user_connections, start_time).fetch_all(conn).await?;
+    let length: i64 = filter.get_length().into();
+    let references = query_as!(MatchReference, r#"SELECT DISTINCT ON(mr.timestamp) mr.* FROM match_references mr INNER JOIN summoners s ON mr.summoner_id = s.id WHERE s.name = any($1) AND mr.timestamp < $2 ORDER BY mr.timestamp DESC LIMIT $3"#, &user_connections, start_time, length).fetch_all(conn).await?;
 
     let mut match_collection: Vec<MatchFeedElement> = vec![];
     for reference in references {

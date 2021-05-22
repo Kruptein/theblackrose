@@ -36,6 +36,8 @@ use routes::{
 use sqlx::PgPool;
 use tokio::sync::{Mutex, RwLock};
 
+use crate::routes::summoners::get_summoner;
+
 pub struct AppState {
     db_conn: PgPool,
     riot_api: Arc<RiotApi>,
@@ -93,6 +95,7 @@ fn main() -> std::io::Result<()> {
                         .service(get_connections)
                         .service(get_matches)
                         .service(get_records)
+                        .service(get_summoner)
                         .service(get_notifications)
                         .service(remove_notification)
                         .service(refresh_connection),

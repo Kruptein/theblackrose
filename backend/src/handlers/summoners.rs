@@ -96,3 +96,64 @@ pub async fn set_all_summoners_update_state(conn: &PgPool, state: bool) -> Resul
         .await
         .map(|result| result.rows_affected())
 }
+
+#[derive(Serialize)]
+#[serde(rename_all(serialize = "camelCase"))]
+pub struct QuickStats {
+    total_played: u64,
+    season_played: u64,
+    total_win: u64,
+    season_win: u64,
+    total_kills: u64,
+    season_kills: u64,
+    total_deaths: u64,
+    season_deaths: u64,
+    total_assists: u64,
+    season_assists: u64,
+}
+
+pub async fn get_summoner_quick_stats(
+    conn: &PgPool,
+    summoner: &Summoner,
+) -> Result<QuickStats, Error> {
+    let played = query!(
+        r#"
+        SELECT
+            COUNT(*) as "total_played!",
+            COUNT(*) filter (WHERE timestamp >= $2) as "season_played!",
+            COUNT(*) filter (WHERE win) as "total_win!",
+            COUNT(*) filter (WHERE win AND timestamp >= $2) as "season_win!",
+            SUM(kills) as "total_kills!",
+            SUM(kills) filter (WHERE timestamp >= $2) as "season_kills!",
+            SUM(deaths) as "total_deaths!",
+            SUM(deaths) filter (WHERE timestamp >= $2) as "season_deaths!",
+            SUM(assists) as "total_assists!",
+            SUM(assists) filter (WHERE timestamp >= $2) as "season_assists!"
+        FROM match_references m
+        INNER JOIN participants p ON m.game_id = p.game_id
+        INNER JOIN participant_stats_general pg ON p.id = pg.participant_id
+        INNER JOIN participant_stats_kills pk ON p.id = pk.participant_id
+        WHERE
+            m.summoner_id = $1 AND
+            p.summoner_id = $1
+        "#,
+        summoner.id,
+        1610064000000 // season 11 start day
+    )
+    .fetch_one(conn)
+    .await?;
+
+    // All i64 are >= 0 at all times, so casting should be safe
+    Ok(QuickStats {
+        total_played: played.total_played as u64,
+        season_played: played.season_played as u64,
+        total_win: played.total_win as u64,
+        season_win: played.season_win as u64,
+        total_kills: played.total_kills as u64,
+        season_kills: played.season_kills as u64,
+        total_deaths: played.total_deaths as u64,
+        season_deaths: played.season_deaths as u64,
+        total_assists: played.total_assists as u64,
+        season_assists: played.season_assists as u64,
+    })
+}

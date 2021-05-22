@@ -15,7 +15,7 @@ export default defineComponent({
 
         async function refresh(): Promise<void> {
             const headers = await getAuthHeader();
-            console.log(await fetch(backendUrl(`/api/connection/${route.params.name}/refresh`), headers));
+            await fetch(backendUrl(`/api/connection/${route.params.name}/refresh`), headers);
         }
 
         return { refresh };

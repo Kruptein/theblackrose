@@ -21,13 +21,12 @@ export async function fetchMatchFeed(filter?: MatchFeedFilter): Promise<MatchFee
     if (filter?.start !== undefined) {
         queries.push(`start=${filter.start}`);
     }
+    if (filter?.length !== undefined) {
+        queries.push(`length=${filter.length}`);
+    }
     if (queries.length > 0) {
         matchUrl += `?${queries.join("&")}`;
     }
-    console.log("start request");
     const response = await fetch(backendUrl(matchUrl), headers);
-    console.log("end request");
-    const data = JSON.parse(await response.json());
-    console.log("end json parse");
-    return data;
+    return JSON.parse(await response.json());
 }

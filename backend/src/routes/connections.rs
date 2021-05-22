@@ -45,7 +45,6 @@ pub async fn add_connection(
             match get_summoner_by_name(riot_api, db_pool, username.as_str()).await {
                 Some(summoner) => match h::add_connection(db_pool, user, summoner).await {
                     Ok(connection) => {
-                        println!("Sending message");
                         &data
                             .update_task
                             .send(ConnectionUpdateMessage { connection })

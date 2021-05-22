@@ -21,7 +21,15 @@ export interface Participant {
     teamId: number;
 }
 export interface Summoner {
+    accountId: string;
+    lastMatchQueryTime: string;
     name: string;
+    profileIconId: number;
+    puuid: string;
+    revisionDate: number;
+    summonerId: string;
+    summonerLevel: number;
+    updateInProgress: boolean;
 }
 export interface ParticipantStatsGeneral {
     champLevel: number;

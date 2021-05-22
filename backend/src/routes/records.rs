@@ -7,7 +7,7 @@ use crate::{
     AppState,
 };
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct RecordFilter {
     names: Option<String>,
 }

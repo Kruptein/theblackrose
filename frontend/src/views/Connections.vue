@@ -1,9 +1,11 @@
 <script lang="ts">
-import { defineComponent, onMounted, ref } from "vue";
+import { computed, defineComponent, onMounted, ref } from "vue";
 
 import { backendUrl, getAuthHeader } from "../api/utils";
-import { getMostRecentPatch } from "../ddragon";
+import { getSummonerIconImage } from "../common";
 import { Connection } from "../models/connections";
+import { connectionStore } from "../store/connections";
+import { alphSort } from "../utils";
 
 // eslint-disable-next-line import/no-unused-modules
 export default defineComponent({
@@ -11,17 +13,15 @@ export default defineComponent({
     setup() {
         const loading = ref(true);
 
-        const connections = ref<Connection[]>([]);
-
-        const getSummonerIconImage = (iconId: number): string => {
-            return backendUrl(`/ddragon/${getMostRecentPatch()}/img/profileicon/${iconId}.png`);
-        };
+        const connections = computed(() =>
+            [...connectionStore.getConnections().values()].sort((a, b) => alphSort(a.name, b.name)),
+        );
 
         onMounted(async () => {
             const headers = await getAuthHeader();
             const response = await fetch(backendUrl("/api/connections/"), headers);
             const data: Connection[] = JSON.parse(await response.json());
-            connections.value.push(...data);
+            connectionStore.addConnections(...data);
             loading.value = false;
         });
 
@@ -37,10 +37,10 @@ export default defineComponent({
             src="https://vignette3.wikia.nocookie.net/leagueoflegends/images/6/6c/Black_Rose.png"
         />
 
-        <template v-if="loading">
+        <template v-if="loading && connections.length === 0">
             <h1>Waiting for server data</h1>
         </template>
-        <template v-if="!loading && connections.length > 0">
+        <template v-else-if="connections.length > 0">
             <h1>Your Connections</h1>
             <p>
                 <router-link to="/connections/add" class="font-normal">Add more connections</router-link>
@@ -48,7 +48,7 @@ export default defineComponent({
             </p>
             <div id="connections">
                 <template v-for="connection of connections" :key="connection">
-                    <router-link :to="'/connection/' + connection.name + '/feed'" class="connection">
+                    <router-link :to="'/connection/' + connection.name" class="connection">
                         <img :src="getSummonerIconImage(connection.profileIconId)" />
                         <div class="connection-name">{{ connection.name }}</div>
                     </router-link>
