@@ -37,7 +37,7 @@ pub async fn add_connection(
 ) -> impl Responder {
     let riot_api = &data.riot_api;
     let db_pool = &data.db_conn;
-    let username = path.0;
+    let username = path.into_inner();
 
     match get_user_from_cache(&data.tokens, auth.token()).await {
         Some(user) => {
@@ -69,7 +69,7 @@ pub async fn refresh_connection(
 ) -> impl Responder {
     let riot_api = &data.riot_api;
     let db_pool = &data.db_conn;
-    let username = path.0;
+    let username = path.into_inner();
 
     match get_user_from_cache(&data.tokens, auth.token()).await {
         Some(_) => match get_summoner_by_name(riot_api, db_pool, username.as_str()).await {

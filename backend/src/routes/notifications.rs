@@ -29,7 +29,7 @@ pub async fn remove_notification(
     auth: BearerAuth,
 ) -> impl Responder {
     let db_pool = &data.db_conn;
-    let notification_id = path.0;
+    let notification_id = path.into_inner();
 
     match get_user_from_cache(&data.tokens, auth.token()).await {
         Some(user) => match n::owns_notification(db_pool, notification_id, user).await {

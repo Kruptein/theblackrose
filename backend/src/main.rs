@@ -47,13 +47,15 @@ fn main() -> std::io::Result<()> {
     dotenv().ok();
     env_logger::init();
 
-    let mut tok_runtime = tokio::runtime::Runtime::new().unwrap();
-    let local_tasks = tokio::task::LocalSet::new();
-    let system_fut = actix_web::rt::System::run_in_tokio("server", &local_tasks);
-
-    local_tasks.block_on(&mut tok_runtime, async {
+    actix_web::rt::System::with_tokio_rt(|| {
+        tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+    })
+    .block_on(async {
         let pool = establish_pool().await.unwrap();
-        tokio::task::spawn_local(system_fut);
+        // tokio::task::spawn_local(system_fut);
 
         let riot_api = Arc::new(rito::create_riot_api());
 

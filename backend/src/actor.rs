@@ -59,7 +59,7 @@ fn update_closure(actor: &mut GameFetchActor, _: &mut Context<GameFetchActor>) {
     let db = actor.db.clone();
     let riot_api = actor.riot_api.clone();
     let game_processing_lock = actor.game_processing_lock.clone();
-    spawn(async { update_connections(db, riot_api, game_processing_lock).await })
+    spawn(async { update_connections(db, riot_api, game_processing_lock).await });
 }
 
 impl Handler<ConnectionUpdateMessage> for GameFetchActor {
