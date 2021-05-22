@@ -5,6 +5,7 @@ import { backendUrl, getAuthHeader } from "../api/utils";
 import { getMostRecentPatch } from "../ddragon";
 import { Connection } from "../models/connections";
 
+// eslint-disable-next-line import/no-unused-modules
 export default defineComponent({
     name: "Connections",
     setup() {

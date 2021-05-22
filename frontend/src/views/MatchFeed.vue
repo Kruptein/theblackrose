@@ -1,7 +1,9 @@
 <script lang="ts">
 import { defineComponent } from "vue";
+
 import MatchFetcher from "../components/MatchFetcher.vue";
 
+// eslint-disable-next-line import/no-unused-modules
 export default defineComponent({
     name: "MatchFeed",
     components: { MatchFetcher },

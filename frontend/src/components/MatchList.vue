@@ -19,7 +19,7 @@ export default defineComponent({
 
         watch(
             () => props.matchData,
-            matchData => {
+            (matchData) => {
                 matches.value = matchData ?? [];
             },
         );

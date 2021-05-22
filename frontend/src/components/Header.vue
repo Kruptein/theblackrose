@@ -1,22 +1,23 @@
 <script lang="ts">
-import { inject, ref, onMounted, Ref } from "vue";
+import { inject, ref, onMounted, Ref, defineComponent } from "vue";
+
 import { backendUrl, getAuthHeader } from "../api/utils";
 import { Notification } from "../models/notifications";
 import { AuthPlugin } from "../plugins/auth0";
 
-export default {
+export default defineComponent({
     setup() {
         const auth = inject<AuthPlugin>("Auth")!;
         const showNotifications = ref(false);
         const notifications: Ref<Notification[]> = ref([]);
 
-        const getNotifications = async () => {
+        async function getNotifications(): Promise<void> {
             const headers = await getAuthHeader();
             const response = await fetch(backendUrl("/api/notifications/"), headers);
             notifications.value = JSON.parse(await response.json());
-        };
+        }
 
-        const removeNotification = async (sliceId: number) => {
+        async function removeNotification(sliceId: number): Promise<void> {
             const notificationId = notifications.value[sliceId].id;
             const headers = await getAuthHeader();
             const response = await fetch(backendUrl(`/api/notifications/${notificationId}/`), {
@@ -24,9 +25,9 @@ export default {
                 ...headers,
             });
             if (response.status === 200) {
-                notifications.value = notifications.value.filter(n => n.id !== notificationId);
+                notifications.value = notifications.value.filter((n) => n.id !== notificationId);
             }
-        };
+        }
 
         onMounted(() => {
             setInterval(getNotifications, 15 * 60 * 1000);
@@ -35,7 +36,7 @@ export default {
 
         return { auth, backendUrl, notifications, removeNotification, showNotifications };
     },
-};
+});
 </script>
 
 <template>
@@ -76,9 +77,7 @@ export default {
                         <div class="message">{{ notification.message }}</div>
                     </div>
                 </div>
-                <div v-if="notifications.length === 0" id="empty">
-                    No new notifications :)
-                </div>
+                <div v-if="notifications.length === 0" id="empty">No new notifications :)</div>
             </div>
             <div id="notifications-footer"></div>
         </template>

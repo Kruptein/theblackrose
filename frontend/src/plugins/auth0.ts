@@ -1,4 +1,4 @@
-import createAuth0Client, { Auth0Client, RedirectLoginOptions } from "@auth0/auth0-spa-js";
+import createAuth0Client, { Auth0Client, IdToken, RedirectLoginOptions } from "@auth0/auth0-spa-js";
 import { App, computed, reactive, watchEffect } from "vue";
 import { NavigationGuardNext, RouteLocation } from "vue-router";
 
@@ -11,7 +11,7 @@ const state = reactive({
     error: null,
 });
 
-async function loginWithPopup() {
+async function loginWithPopup(): Promise<void> {
     state.popupOpen = true;
 
     try {
@@ -22,16 +22,16 @@ async function loginWithPopup() {
         state.popupOpen = false;
     }
 
-    state.user = await client.getUser();
+    state.user = (await client.getUser()) ?? {};
     state.isAuthenticated = true;
 }
 
-async function handleRedirectCallback() {
+async function handleRedirectCallback(): Promise<void> {
     state.loading = true;
 
     try {
         await client.handleRedirectCallback();
-        state.user = await client.getUser();
+        state.user = (await client.getUser()) ?? {};
         state.isAuthenticated = true;
     } catch (e) {
         state.error = e;
@@ -44,19 +44,19 @@ export const authPlugin = {
     isAuthenticated: computed(() => state.isAuthenticated),
     loading: computed(() => state.loading),
     user: computed(() => state.user),
-    getIdTokenClaims: () => client.getIdTokenClaims(),
-    getTokenSilently: () => client.getTokenSilently(),
-    getTokenWithPopup: () => client.getTokenWithPopup(),
+    getIdTokenClaims: (): Promise<IdToken> => client.getIdTokenClaims(),
+    getTokenSilently: (): Promise<any> => client.getTokenSilently(),
+    getTokenWithPopup: (): Promise<string> => client.getTokenWithPopup(),
     handleRedirectCallback,
-    loginWithRedirect: (o: RedirectLoginOptions | undefined) => client.loginWithRedirect(o),
+    loginWithRedirect: (o: RedirectLoginOptions | undefined): Promise<void> => client.loginWithRedirect(o),
     loginWithPopup,
-    logout: () => client.logout(),
+    logout: (): void => client.logout(),
 };
 
-const routeGuard = (to: RouteLocation, from: RouteLocation, next: NavigationGuardNext) => {
+const routeGuard = (to: RouteLocation, _from: RouteLocation, next: NavigationGuardNext): void => {
     const { isAuthenticated, loading, loginWithRedirect } = authPlugin;
 
-    const verify = () => {
+    const verify = (): void => {
         // If the user is authenticated, continue with the route
         if (isAuthenticated.value) {
             return next();
@@ -79,16 +79,14 @@ const routeGuard = (to: RouteLocation, from: RouteLocation, next: NavigationGuar
     });
 };
 
-async function init(onRedirectCallback: (url: string) => void) {
+async function init(onRedirectCallback: (url: string) => void): Promise<{ install(app: App): void }> {
     // const { onRedirectCallback, redirectUri = window.location.origin } = options;
     const redirectUri = window.location.origin;
 
     client = await createAuth0Client({
         domain: process.env.VUE_APP_AUTH0_DOMAIN,
-        // eslint-disable-next-line @typescript-eslint/camelcase
         client_id: process.env.VUE_APP_AUTH0_CLIENT_KEY,
         audience: process.env.VUE_APP_AUTH0_AUDIENCE,
-        // eslint-disable-next-line @typescript-eslint/camelcase
         redirect_uri: redirectUri,
     });
 
@@ -108,7 +106,7 @@ async function init(onRedirectCallback: (url: string) => void) {
     } finally {
         // Initialize our internal authentication state
         state.isAuthenticated = await client.isAuthenticated();
-        state.user = await client.getUser();
+        state.user = (await client.getUser()) ?? {};
         state.loading = false;
     }
 

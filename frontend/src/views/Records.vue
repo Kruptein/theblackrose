@@ -1,15 +1,15 @@
 <script lang="ts">
 import { defineComponent, onMounted, ref } from "vue";
 
-import MatchList from "../components/MatchList.vue";
-
 import { backendUrl, getAuthHeader } from "../api/utils";
+import MatchList from "../components/MatchList.vue";
+import { MatchFeedElement } from "../models/matchfeed";
 import { getQueueFromId } from "../models/queue";
 import { RecordType } from "../models/records";
-import { MatchFeedElement } from "../models/matchfeed";
 
 type Record = { id: number; recordType: number; value: number; name: string; queueId: number; gameId: number };
 
+// eslint-disable-next-line import/no-unused-modules
 export default defineComponent({
     name: "Records",
     components: { MatchList },

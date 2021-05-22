@@ -1,5 +1,6 @@
 import { Connection } from "../models/connections";
 import { MatchFeedElement, MatchFeedFilter } from "../models/matchfeed";
+
 import { backendUrl, getAuthHeader } from "./utils";
 
 export async function fetchConnections(): Promise<string[]> {
@@ -17,7 +18,7 @@ export async function fetchMatchFeed(filter?: MatchFeedFilter): Promise<MatchFee
     if (filter?.names) {
         queries.push(`names=${filter.names}`);
     }
-    if (filter?.start) {
+    if (filter?.start !== undefined) {
         queries.push(`start=${filter.start}`);
     }
     if (queries.length > 0) {

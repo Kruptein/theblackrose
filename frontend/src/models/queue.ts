@@ -1,4 +1,4 @@
-export enum Queue {
+enum Queue {
     // Games on Custom games
     Custom = 0,
     // 5v5 Blind Pick games on Summoner's Rift

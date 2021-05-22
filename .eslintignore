@@ -1,0 +1,7 @@
+node_modules/*
+vue.config.js
+src/shims-vue.d.ts
+dist/*
+babel.config.js
+.eslintrc.js
+../ddragon/*

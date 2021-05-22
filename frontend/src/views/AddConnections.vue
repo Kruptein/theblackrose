@@ -3,6 +3,7 @@ import { defineComponent, ref } from "vue";
 
 import { backendUrl, getAuthHeader } from "../api/utils";
 
+// eslint-disable-next-line import/no-unused-modules
 export default defineComponent({
     name: "AddConnections",
     setup() {
@@ -10,7 +11,7 @@ export default defineComponent({
 
         const message = ref("We just need the name of the summoner you want to inquire.");
 
-        async function onSubmit() {
+        async function onSubmit(): Promise<void> {
             message.value = "Submitting to server";
             const options: { method?: string; headers: { Authorization: string } } = await getAuthHeader();
             options.method = "POST";

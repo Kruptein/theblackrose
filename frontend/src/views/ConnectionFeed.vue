@@ -2,10 +2,10 @@
 import { defineComponent } from "vue";
 import { useRoute } from "vue-router";
 
+import { backendUrl, getAuthHeader } from "../api/utils";
 import MatchFetcher from "../components/MatchFetcher.vue";
 
-import { backendUrl, getAuthHeader } from "../api/utils";
-
+// eslint-disable-next-line import/no-unused-modules
 export default defineComponent({
     name: "MatchFeed",
     components: { MatchFetcher },
@@ -13,10 +13,10 @@ export default defineComponent({
     setup() {
         const route = useRoute();
 
-        const refresh = async (): Promise<void> => {
+        async function refresh(): Promise<void> {
             const headers = await getAuthHeader();
             console.log(await fetch(backendUrl(`/api/connection/${route.params.name}/refresh`), headers));
-        };
+        }
 
         return { refresh };
     },

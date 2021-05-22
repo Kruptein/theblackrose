@@ -1,9 +1,8 @@
 <script lang="ts">
 import { defineComponent, PropType, ref } from "vue";
 
-import MatchList from "../components/MatchList.vue";
-
 import { fetchMatchFeed, fetchConnections } from "../api/matchfeed";
+import MatchList from "../components/MatchList.vue";
 import { MatchFeedElement, MatchFeedFilter } from "../models/matchfeed";
 
 export default defineComponent({
