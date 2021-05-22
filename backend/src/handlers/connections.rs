@@ -1,83 +1,92 @@
-use diesel::{insert_into, prelude::*, result::Error, QueryDsl, RunQueryDsl};
+use sqlx::{query, query_as, Error, PgPool};
 
 use crate::{
-    db::Conn,
     models::{
-        connections::{Connection, NewConnection},
+        connections::Connection,
         matches::{MatchFeedElement, MatchReference},
         summoners::Summoner,
         users::User,
     },
     routes::matches::MatchFilter,
-    schema::connections::dsl::{connections, summoner_id, user_id},
-    schema::match_references::dsl as mr,
-    schema::summoners::dsl::{id as s_id, name, profile_icon_id, summoners},
 };
 
 use super::matches::get_game_info;
 
-pub fn add_connection(conn: &Conn, user: User, summoner: Summoner) -> Result<Connection, Error> {
-    let new_connection = NewConnection {
-        summoner_id: summoner.id,
-        user_id: user.id,
-    };
-    insert_into(connections)
-        .values(new_connection)
-        .get_result(conn)
+pub async fn add_connection(
+    conn: &PgPool,
+    user: User,
+    summoner: Summoner,
+) -> Result<Connection, Error> {
+    query_as!(
+        Connection,
+        "INSERT INTO connections (user_id, summoner_id) VALUES ($1, $2) RETURNING *",
+        user.id,
+        summoner.id
+    )
+    .fetch_one(conn)
+    .await
 }
 
-pub fn get_unique_connections(conn: &Conn) -> Result<Vec<Connection>, Error> {
-    connections.distinct_on(summoner_id).get_results(conn)
+pub async fn get_unique_connections(conn: &PgPool) -> Result<Vec<Connection>, Error> {
+    query_as!(
+        Connection,
+        "SELECT DISTINCT ON(summoner_id) * FROM connections"
+    )
+    .fetch_all(conn)
+    .await
 }
 
-pub fn get_summoner(conn: &Conn, connection: Connection) -> Result<Summoner, Error> {
-    summoners
-        .filter(s_id.eq(connection.summoner_id))
-        .get_result(conn)
+pub async fn get_summoner(conn: &PgPool, connection: Connection) -> Result<Summoner, Error> {
+    query_as!(
+        Summoner,
+        "SELECT * FROM summoners WHERE id = $1",
+        connection.summoner_id
+    )
+    .fetch_one(conn)
+    .await
 }
 
-pub fn get_connection_short_info(conn: &Conn, user: User) -> Result<Vec<(String, i32)>, Error> {
-    connections
-        .inner_join(summoners)
-        .select((name, profile_icon_id))
-        .filter(user_id.eq(user.id))
-        .get_results(conn)
+#[derive(Serialize)]
+#[serde(rename_all(serialize = "camelCase"))]
+pub struct ConnectionShortInfo {
+    name: String,
+    profile_icon_id: i32,
 }
 
-pub fn get_connection_matches(
-    conn: &Conn,
+pub async fn get_connection_short_info(
+    conn: &PgPool,
+    user: User,
+) -> Result<Vec<ConnectionShortInfo>, Error> {
+    sqlx::query_as!(ConnectionShortInfo, "SELECT name, profile_icon_id FROM connections c INNER JOIN summoners s ON c.summoner_id = s.id WHERE c.user_id = $1", user.id)
+        .fetch_all(conn)
+        .await
+}
+
+pub async fn get_connection_matches(
+    conn: &PgPool,
     user: User,
     filter: MatchFilter,
 ) -> Result<Vec<MatchFeedElement>, Error> {
     let user_connections = match filter.get_names() {
         Some(names) => names.to_owned(),
-        None => summoners
-            .inner_join(connections)
-            .filter(user_id.eq(user.id))
-            .select(name)
-            .get_results(conn)?,
+        None => {
+            query!("SELECT s.name FROM summoners s INNER JOIN connections c ON c.summoner_id = s.id WHERE c.user_id = $1", user.id).fetch_all(conn).await?.into_iter().map(|record| record.name).collect()
+        }
     };
     let start_time = match filter.get_start_time() {
         Some(s) => s.to_owned(),
         None => i64::MAX,
     };
 
-    let references: Vec<(MatchReference, Summoner)> = mr::match_references
-        .inner_join(summoners)
-        .filter(name.eq_any(user_connections))
-        .filter(mr::timestamp.lt(start_time))
-        .limit(10)
-        .distinct_on(mr::timestamp)
-        .order_by(mr::timestamp.desc())
-        .get_results(conn)?;
+    let references = query_as!(MatchReference, r#"SELECT DISTINCT ON(mr.timestamp) mr.* FROM match_references mr INNER JOIN summoners s ON mr.summoner_id = s.id WHERE s.name = any($1) AND mr.timestamp < $2 ORDER BY mr.timestamp DESC LIMIT 10"#, &user_connections, start_time).fetch_all(conn).await?;
 
     let mut match_collection: Vec<MatchFeedElement> = vec![];
     for reference in references {
-        match get_game_info(reference.0.game_id, conn) {
+        match get_game_info(reference.game_id, conn).await {
             Ok(data) => match_collection.push(data),
             Err(err) => println!(
                 "Could not get game info for {} ({})",
-                reference.0.game_id, err
+                reference.game_id, err
             ),
         }
     }

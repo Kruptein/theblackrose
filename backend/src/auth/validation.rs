@@ -6,9 +6,10 @@ use actix_web_httpauth::extractors::{
     AuthenticationError,
 };
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
+use sqlx::PgPool;
 use tokio::sync::RwLock;
 
-use crate::{db::Pool, errors::ServiceError, AppState};
+use crate::{errors::ServiceError, AppState};
 
 use super::{
     cache::update_token_cache,
@@ -26,10 +27,9 @@ pub async fn validator(
         .unwrap_or_else(|| Default::default());
 
     let state = req.app_data::<web::Data<AppState>>().unwrap();
-    let db_conn = state.db_conn.clone();
     let tokens = &state.tokens;
 
-    match validate_token(db_conn, tokens, credentials.token()).await {
+    match validate_token(&state.db_conn, tokens, credentials.token()).await {
         Ok(()) => Ok(req),
         Err(e) => {
             println!("Validate Token Error: {:?}", e);
@@ -39,7 +39,7 @@ pub async fn validator(
 }
 
 pub async fn validate_token(
-    db_pool: Pool,
+    db_pool: &PgPool,
     tokens: &RwLock<HashMap<String, i32>>,
     token: &str,
 ) -> Result<(), ServiceError> {

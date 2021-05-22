@@ -1,84 +1,98 @@
-use diesel::{insert_into, prelude::*, result::Error, update, QueryDsl, RunQueryDsl};
 use riven::models::match_v4 as RM;
 use riven::models::summoner_v4 as RS;
+use sqlx::{query, query_as, Error, PgPool};
 
-use crate::{
-    db::Conn,
-    models::summoners::{NewSummoner, Summoner},
-    schema::summoners::dsl::{
-        account_id, last_match_query_time, name, profile_icon_id, puuid, revision_date,
-        summoner_level, summoners, update_in_progress,
-    },
-};
+use crate::models::summoners::Summoner;
 
-pub fn get_summoner_by_name(conn: &Conn, summoner: &str) -> Result<Summoner, Error> {
-    summoners.filter(name.eq(summoner)).get_result(conn)
+pub async fn get_summoner_by_name(conn: &PgPool, summoner: &str) -> Result<Summoner, Error> {
+    query_as!(
+        Summoner,
+        "SELECT * FROM summoners WHERE name = $1",
+        summoner
+    )
+    .fetch_one(conn)
+    .await
 }
 
-pub fn add_summoner(conn: &Conn, summoner: RS::Summoner) -> Result<Summoner, Error> {
-    let new_summoner = NewSummoner {
-        account_id: summoner.account_id.as_str(),
-        profile_icon_id: summoner.profile_icon_id,
-        revision_date: Some(summoner.revision_date),
-        name: summoner.name.as_str(),
-        summoner_id: Some(summoner.id.as_str()),
-        puuid: Some(summoner.puuid.as_str()),
-        summoner_level: Some(summoner.summoner_level),
-    };
-    insert_into(summoners).values(new_summoner).get_result(conn)
+pub async fn add_summoner(conn: &PgPool, summoner: RS::Summoner) -> Result<Summoner, Error> {
+    query_as!(Summoner, "INSERT INTO summoners (account_id, profile_icon_id, revision_date, name, summoner_id, puuid, summoner_level) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+    summoner.account_id.as_str(),
+    summoner.profile_icon_id,
+    Some(summoner.revision_date),
+    summoner.name.as_str(),
+    Some(summoner.id.as_str()),
+    Some(summoner.puuid.as_str()),
+    Some(summoner.summoner_level)).fetch_one(conn).await
 }
 
-pub fn update_summoner(conn: &Conn, id: i32, summoner: RS::Summoner) -> Result<usize, Error> {
-    update(summoners.find(id))
-        .set((
-            profile_icon_id.eq(summoner.profile_icon_id),
-            name.eq(summoner.name),
-            revision_date.eq(summoner.revision_date),
-            summoner_level.eq(summoner.summoner_level),
-            puuid.eq(summoner.puuid),
-        ))
-        .execute(conn)
+pub async fn update_summoner(conn: &PgPool, id: i32, summoner: RS::Summoner) -> Result<u64, Error> {
+    query!(
+        "UPDATE summoners SET profile_icon_id = $1, name = $2, revision_date = $3, summoner_level = $4, puuid = $5 WHERE id = $6",
+        summoner.profile_icon_id,
+        summoner.name,
+        summoner.revision_date,
+        summoner.summoner_level,
+        summoner.puuid,
+        id,
+    )
+    .execute(conn).await.map(|result| result.rows_affected())
 }
 
-pub fn get_or_add_partial_summoner(conn: &Conn, summoner: RM::Player) -> Result<Summoner, Error> {
+pub async fn get_or_add_partial_summoner(
+    conn: &PgPool,
+    summoner: RM::Player,
+) -> Result<Summoner, Error> {
     let acc_id = summoner.account_id.clone();
-    match summoners.filter(account_id.eq(acc_id)).get_result(conn) {
+    let db_summoner = query_as!(
+        Summoner,
+        "SELECT * FROM summoners WHERE account_id = $1",
+        acc_id
+    )
+    .fetch_one(conn)
+    .await;
+    match db_summoner {
         Ok(summoner) => Ok(summoner),
-        Err(_) => add_partial_summoner(conn, summoner),
+        Err(_) => add_partial_summoner(conn, summoner).await,
     }
 }
 
-fn add_partial_summoner(conn: &Conn, summoner: RM::Player) -> Result<Summoner, Error> {
-    let new_summoner = NewSummoner {
-        account_id: summoner.account_id.as_str(),
-        profile_icon_id: summoner.profile_icon,
-        name: summoner.summoner_name.as_str(),
-        summoner_id: summoner.summoner_id.as_deref(),
-        revision_date: None,
-        puuid: None,
-        summoner_level: None,
-    };
-    insert_into(summoners).values(new_summoner).get_result(conn)
+async fn add_partial_summoner(conn: &PgPool, summoner: RM::Player) -> Result<Summoner, Error> {
+    query_as!(Summoner, "INSERT INTO summoners (account_id, profile_icon_id, name, summoner_id) VALUES ($1, $2, $3, $4) RETURNING *", summoner.account_id.as_str(), summoner.profile_icon, summoner.summoner_name.as_str(), summoner.summoner_id.as_deref()).fetch_one(conn).await
 }
 
-pub fn set_summoner_last_query_time(
-    conn: &Conn,
+pub async fn set_summoner_last_query_time(
+    conn: &PgPool,
     summoner: i32,
     time: chrono::NaiveDateTime,
-) -> Result<usize, Error> {
-    update(summoners.find(summoner))
-        .set(last_match_query_time.eq(time))
-        .execute(conn)
+) -> Result<u64, Error> {
+    query!(
+        "UPDATE summoners SET last_match_query_time = $1 WHERE id = $2",
+        time,
+        summoner
+    )
+    .execute(conn)
+    .await
+    .map(|result| result.rows_affected())
 }
 
-pub fn set_summoner_update_state(conn: &Conn, summoner: i32, state: bool) -> Result<usize, Error> {
-    update(summoners.find(summoner))
-        .set(update_in_progress.eq(state))
-        .execute(conn)
+pub async fn set_summoner_update_state(
+    conn: &PgPool,
+    summoner: i32,
+    state: bool,
+) -> Result<u64, Error> {
+    query!(
+        "UPDATE summoners SET update_in_progress = $1 WHERE id = $2",
+        state,
+        summoner
+    )
+    .execute(conn)
+    .await
+    .map(|result| result.rows_affected())
 }
 
-pub fn set_all_summoners_update_state(conn: &Conn, state: bool) -> Result<usize, Error> {
-    update(summoners)
-        .set(update_in_progress.eq(state))
+pub async fn set_all_summoners_update_state(conn: &PgPool, state: bool) -> Result<u64, Error> {
+    query!("UPDATE summoners SET update_in_progress = $1", state)
         .execute(conn)
+        .await
+        .map(|result| result.rows_affected())
 }

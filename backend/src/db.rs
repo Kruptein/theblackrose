@@ -1,15 +1,9 @@
 use std::env;
 
-use diesel::{pg::PgConnection, r2d2::ConnectionManager};
-use r2d2::PooledConnection;
+use sqlx::PgPool;
+use sqlx::{postgres::PgPoolOptions, Error};
 
-pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
-pub type Conn = PooledConnection<ConnectionManager<PgConnection>>;
-
-pub fn establish_pool() -> Pool {
+pub async fn establish_pool() -> Result<PgPool, Error> {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let manager = ConnectionManager::<PgConnection>::new(database_url);
-    r2d2::Pool::builder()
-        .build(manager)
-        .expect("Failed to create db pool.")
+    Ok(PgPoolOptions::new().connect(database_url.as_str()).await?)
 }

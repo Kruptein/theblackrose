@@ -8,19 +8,16 @@ pub async fn get_notifications(data: web::Data<AppState>, auth: BearerAuth) -> i
     let db_pool = &data.db_conn;
 
     match get_user_from_cache(&data.tokens, auth.token()).await {
-        Some(user) => {
-            let db_conn = db_pool.clone().get().unwrap();
-            match web::block(move || n::get_notifications(&db_conn, user)).await {
-                Ok(notifications) => match serde_json::to_string(&notifications) {
-                    Ok(data) => HttpResponse::Ok().json(data),
-                    Err(_) => HttpResponse::InternalServerError().finish(),
-                },
-                Err(e) => {
-                    println!("Get notifications error: {:?}", e);
-                    HttpResponse::InternalServerError().finish()
-                }
+        Some(user) => match n::get_notifications(db_pool, user).await {
+            Ok(notifications) => match serde_json::to_string(&notifications) {
+                Ok(data) => HttpResponse::Ok().json(data),
+                Err(_) => HttpResponse::InternalServerError().finish(),
+            },
+            Err(e) => {
+                println!("Get notifications error: {:?}", e);
+                HttpResponse::InternalServerError().finish()
             }
-        }
+        },
         None => HttpResponse::BadRequest().finish(),
     }
 }
@@ -35,28 +32,20 @@ pub async fn remove_notification(
     let notification_id = path.0;
 
     match get_user_from_cache(&data.tokens, auth.token()).await {
-        Some(user) => {
-            let db_conn = db_pool.clone().get().unwrap();
-            match web::block(move || n::owns_notification(&db_conn, notification_id, user)).await {
-                Ok(true) => {
-                    let db_conn = db_pool.get().unwrap();
-                    match web::block(move || n::remove_notification(&db_conn, notification_id))
-                        .await
-                    {
-                        Ok(notifications) => match serde_json::to_string(&notifications) {
-                            Ok(data) => HttpResponse::Ok().json(data),
-                            Err(_) => HttpResponse::InternalServerError().finish(),
-                        },
-                        Err(e) => {
-                            println!("Get notifications error: {:?}", e);
-                            HttpResponse::InternalServerError().finish()
-                        }
-                    }
+        Some(user) => match n::owns_notification(db_pool, notification_id, user).await {
+            Ok(true) => match n::remove_notification(db_pool, notification_id).await {
+                Ok(notifications) => match serde_json::to_string(&notifications) {
+                    Ok(data) => HttpResponse::Ok().json(data),
+                    Err(_) => HttpResponse::InternalServerError().finish(),
+                },
+                Err(e) => {
+                    println!("Get notifications error: {:?}", e);
+                    HttpResponse::InternalServerError().finish()
                 }
-                Ok(false) => HttpResponse::NotFound().finish(),
-                Err(_) => HttpResponse::InternalServerError().finish(),
-            }
-        }
+            },
+            Ok(false) => HttpResponse::NotFound().finish(),
+            Err(_) => HttpResponse::InternalServerError().finish(),
+        },
         None => HttpResponse::BadRequest().finish(),
     }
 }

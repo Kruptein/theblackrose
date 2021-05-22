@@ -1,13 +1,13 @@
 use std::{collections::HashSet, env, sync::Arc, time::Duration};
 
 use actix::{prelude::*, spawn};
-use actix_web::{error::BlockingError, web};
 use chrono::TimeZone;
 use riven::{consts::Region, models::match_v4::Match, models::match_v4::MatchReference, RiotApi};
+use sqlx::{Error, PgPool};
 use tokio::sync::Mutex;
 
 use crate::{
-    db::Pool, handlers::connections::get_summoner, handlers::connections::get_unique_connections,
+    handlers::connections::get_summoner, handlers::connections::get_unique_connections,
     handlers::matches as m, handlers::summoners as s, models::connections::Connection,
     models::summoners::Summoner, utils::millis_to_chrono,
 };
@@ -25,7 +25,7 @@ pub struct SummonerUpdateMessage {
 }
 
 pub struct GameFetchActor {
-    pub db: Pool,
+    pub db: PgPool,
     pub riot_api: Arc<RiotApi>,
     pub game_processing_lock: Arc<Mutex<HashSet<i64>>>,
 }
@@ -51,11 +51,8 @@ impl Actor for GameFetchActor {
     }
 }
 
-async fn unlock_all_summoners(db: Pool) {
-    let conn = db.get().unwrap();
-    web::block(move || s::set_all_summoners_update_state(&conn, false))
-        .await
-        .unwrap();
+async fn unlock_all_summoners(db: PgPool) {
+    s::set_all_summoners_update_state(&db, false).await.unwrap();
 }
 
 fn update_closure(actor: &mut GameFetchActor, _: &mut Context<GameFetchActor>) {
@@ -69,10 +66,10 @@ impl Handler<ConnectionUpdateMessage> for GameFetchActor {
     type Result = ();
 
     fn handle(&mut self, msg: ConnectionUpdateMessage, _: &mut Context<GameFetchActor>) {
-        let d = self.db.clone();
+        let db = self.db.clone();
         let api = self.riot_api.clone();
         let game_processing_lock = self.game_processing_lock.clone();
-        spawn(async { update_connection(d, api, game_processing_lock, msg.connection).await });
+        spawn(async { update_connection(db, api, game_processing_lock, msg.connection).await });
     }
 }
 
@@ -80,21 +77,20 @@ impl Handler<SummonerUpdateMessage> for GameFetchActor {
     type Result = ();
 
     fn handle(&mut self, msg: SummonerUpdateMessage, _: &mut Context<GameFetchActor>) {
-        let d = self.db.clone();
+        let db = self.db.clone();
         let api = self.riot_api.clone();
         let game_processing_lock = self.game_processing_lock.clone();
-        spawn(async { update_summoner(d, msg.summoner, api, game_processing_lock).await });
+        spawn(async { update_summoner(db, msg.summoner, api, game_processing_lock).await });
     }
 }
 
 async fn update_connections(
-    db: Pool,
+    db: PgPool,
     api: Arc<RiotApi>,
     game_processing_lock: Arc<Mutex<HashSet<i64>>>,
 ) {
-    match get_unique_connections(&db.get().unwrap()) {
+    match get_unique_connections(&db).await {
         Ok(connections) => {
-            let db = &db.clone();
             for connection in connections {
                 update_connection(
                     db.clone(),
@@ -110,26 +106,22 @@ async fn update_connections(
 }
 
 async fn update_connection(
-    db: Pool,
+    db: PgPool,
     api: Arc<RiotApi>,
     game_processing_lock: Arc<Mutex<HashSet<i64>>>,
     connection: Connection,
 ) {
-    let conn = db.get().unwrap();
-    let summoner = web::block(move || get_summoner(&conn, connection))
-        .await
-        .unwrap();
-    let db = &db.clone();
+    let summoner = get_summoner(&db, connection).await.unwrap();
     match summoner.update_in_progress {
         true => (),
         false => {
-            update_summoner(db.clone(), summoner, api, game_processing_lock).await;
+            update_summoner(db, summoner, api, game_processing_lock).await;
         }
     }
 }
 
 async fn update_summoner(
-    db: Pool,
+    db: PgPool,
     summoner: Summoner,
     api: Arc<RiotApi>,
     game_processing_lock: Arc<Mutex<HashSet<i64>>>,
@@ -141,14 +133,13 @@ async fn update_summoner(
     set_summoner_state(&db, summoner_id, false).await;
 }
 
-async fn set_summoner_state(db: &Pool, summoner: i32, state: bool) {
-    let conn = db.get().unwrap();
-    web::block(move || s::set_summoner_update_state(&conn, summoner, state))
+async fn set_summoner_state(db: &PgPool, summoner: i32, state: bool) {
+    s::set_summoner_update_state(db, summoner, state)
         .await
         .unwrap();
 }
 
-async fn update_summoner_table(db: &Pool, api: &RiotApi, summoner: &Summoner) {
+async fn update_summoner_table(db: &PgPool, api: &RiotApi, summoner: &Summoner) {
     let summoner_id = summoner.id;
     match api
         .summoner_v4()
@@ -156,10 +147,7 @@ async fn update_summoner_table(db: &Pool, api: &RiotApi, summoner: &Summoner) {
         .await
     {
         Ok(summoner) => {
-            let conn = db.get().unwrap();
-            web::block(move || s::update_summoner(&conn, summoner_id, summoner))
-                .await
-                .unwrap();
+            s::update_summoner(db, summoner_id, summoner).await.unwrap();
         }
         Err(_) => println!(
             "Could not update summoner data for account id: {} (username: {})",
@@ -169,7 +157,7 @@ async fn update_summoner_table(db: &Pool, api: &RiotApi, summoner: &Summoner) {
 }
 
 async fn update_matches_for_summoner(
-    db: &Pool,
+    db: &PgPool,
     api: &RiotApi,
     game_processing_lock: &Arc<Mutex<HashSet<i64>>>,
     summoner: Summoner,
@@ -243,13 +231,11 @@ async fn update_matches_for_summoner(
         begin_index += 100;
     }
     if last_game_time.is_some() {
-        let conn = db.get().unwrap();
         let summoner_id = summoner.id.clone();
-        web::block(move || {
-            s::set_summoner_last_query_time(&conn, summoner_id, last_game_time.unwrap())
-        })
-        .await
-        .unwrap();
+
+        s::set_summoner_last_query_time(db, summoner_id, last_game_time.unwrap())
+            .await
+            .unwrap();
     }
     println!(
         "Completed match update loop for {} [{}/{} games added]",
@@ -257,23 +243,17 @@ async fn update_matches_for_summoner(
     );
 }
 
-async fn add_game_details(db: &Pool, api: &RiotApi, game_id: i64) -> bool {
-    let conn = db.get().unwrap();
-    match web::block(move || m::get_match_details(&conn, game_id)).await {
+async fn add_game_details(db: &PgPool, api: &RiotApi, game_id: i64) -> bool {
+    match m::get_match_details(db, game_id).await {
         Ok(_) => false,
-        Err(BlockingError::Error(diesel::result::Error::NotFound)) => {
-            match get_match_details(api, game_id).await {
-                Some(match_details) => {
-                    let conn = db.get().unwrap();
-                    web::block(move || m::add_match_details(&conn, match_details))
-                        .await
-                        .unwrap();
-                    println!("Added game {}", game_id);
-                    true
-                }
-                None => false,
+        Err(Error::RowNotFound) => match get_match_details(api, game_id).await {
+            Some(match_details) => {
+                m::add_match_details(db, match_details).await.unwrap();
+                println!("Added game {}", game_id);
+                true
             }
-        }
+            None => false,
+        },
         Err(e) => {
             println!("ADD GAME DETAILS ERROR: {:?}", e);
             false
@@ -281,14 +261,16 @@ async fn add_game_details(db: &Pool, api: &RiotApi, game_id: i64) -> bool {
     }
 }
 
-async fn add_match_reference(db: &Pool, match_reference: MatchReference, summoner_id: i32) -> bool {
-    let conn = db.get().unwrap();
+async fn add_match_reference(
+    db: &PgPool,
+    match_reference: MatchReference,
+    summoner_id: i32,
+) -> bool {
     let game_id = match_reference.game_id.clone();
-    match web::block(move || m::get_match_reference(&conn, game_id, summoner_id)).await {
+    match m::get_match_reference(db, game_id, summoner_id).await {
         Ok(_) => false,
-        Err(BlockingError::Error(diesel::result::Error::NotFound)) => {
-            let conn = db.get().unwrap();
-            web::block(move || m::add_match_reference(&conn, match_reference, summoner_id))
+        Err(Error::RowNotFound) => {
+            m::add_match_reference(db, match_reference, summoner_id)
                 .await
                 .unwrap();
             println!("Added match reference {} for {}", game_id, summoner_id);

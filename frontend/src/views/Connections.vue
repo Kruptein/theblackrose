@@ -3,13 +3,14 @@ import { defineComponent, onMounted, ref } from "vue";
 
 import { backendUrl, getAuthHeader } from "../api/utils";
 import { getMostRecentPatch } from "../ddragon";
+import { Connection } from "../models/connections";
 
 export default defineComponent({
     name: "Connections",
     setup() {
         const loading = ref(true);
 
-        const connections = ref<[string, number][]>([]);
+        const connections = ref<Connection[]>([]);
 
         const getSummonerIconImage = (iconId: number): string => {
             return backendUrl(`/ddragon/${getMostRecentPatch()}/img/profileicon/${iconId}.png`);
@@ -18,7 +19,7 @@ export default defineComponent({
         onMounted(async () => {
             const headers = await getAuthHeader();
             const response = await fetch(backendUrl("/api/connections/"), headers);
-            const data: [string, number][] = JSON.parse(await response.json());
+            const data: Connection[] = JSON.parse(await response.json());
             connections.value.push(...data);
             loading.value = false;
         });
@@ -46,9 +47,9 @@ export default defineComponent({
             </p>
             <div id="connections">
                 <template v-for="connection of connections" :key="connection">
-                    <router-link :to="'/connection/' + connection[0] + '/feed'" class="connection">
-                        <img :src="getSummonerIconImage(connection[1])" />
-                        <div class="connection-name">{{ connection[0] }}</div>
+                    <router-link :to="'/connection/' + connection.name + '/feed'" class="connection">
+                        <img :src="getSummonerIconImage(connection.profileIconId)" />
+                        <div class="connection-name">{{ connection.name }}</div>
                     </router-link>
                 </template>
             </div>
