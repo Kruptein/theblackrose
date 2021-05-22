@@ -494,6 +494,81 @@
       ]
     }
   },
+  "57960500c36e6b8887778290b9cd68ba2e57a4039f5c1b0769499bb47c073bb8": {
+    "query": "\n        SELECT\n            COUNT(*) as \"total_played!\",\n            COUNT(*) filter (WHERE timestamp >= $2) as \"season_played!\",\n            COUNT(*) filter (WHERE win) as \"total_win!\",\n            COUNT(*) filter (WHERE win AND timestamp >= $2) as \"season_win!\",\n            SUM(kills) as \"total_kills!\",\n            SUM(kills) filter (WHERE timestamp >= $2) as \"season_kills!\",\n            SUM(deaths) as \"total_deaths!\",\n            SUM(deaths) filter (WHERE timestamp >= $2) as \"season_deaths!\",\n            SUM(assists) as \"total_assists!\",\n            SUM(assists) filter (WHERE timestamp >= $2) as \"season_assists!\"\n        FROM match_references m\n        INNER JOIN participants p ON m.game_id = p.game_id\n        INNER JOIN participant_stats_general pg ON p.id = pg.participant_id\n        INNER JOIN participant_stats_kills pk ON p.id = pk.participant_id\n        WHERE\n            m.summoner_id = $1 AND\n            p.summoner_id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "total_played!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "season_played!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "total_win!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "season_win!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "total_kills!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 5,
+          "name": "season_kills!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 6,
+          "name": "total_deaths!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 7,
+          "name": "season_deaths!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 8,
+          "name": "total_assists!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 9,
+          "name": "season_assists!",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  },
   "583a139e7c0c31f04919237131abc2381c995a9c327de7343b82ce3fbbd74ded": {
     "query": "UPDATE summoners SET update_in_progress = $1 WHERE id = $2",
     "describe": {
@@ -900,69 +975,6 @@
         "Left": [
           "Int8",
           "Int4"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        true,
-        false,
-        false,
-        false,
-        true,
-        false
-      ]
-    }
-  },
-  "88b3f06d38eacae7a639d63b62c31d5d3bfd1f97c146c259caf4b75511b9705c": {
-    "query": "SELECT DISTINCT ON(mr.timestamp) mr.* FROM match_references mr INNER JOIN summoners s ON mr.summoner_id = s.id WHERE s.name = any($1) AND mr.timestamp < $2 ORDER BY mr.timestamp DESC LIMIT 10",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "game_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "summoner_id",
-          "type_info": "Int4"
-        },
-        {
-          "ordinal": 2,
-          "name": "role",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "platform_id",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 4,
-          "name": "champion",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 5,
-          "name": "queue",
-          "type_info": "Int4"
-        },
-        {
-          "ordinal": 6,
-          "name": "lane",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 7,
-          "name": "timestamp",
-          "type_info": "Int8"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "TextArray",
-          "Int8"
         ]
       },
       "nullable": [
@@ -1727,6 +1739,70 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "f6947751e8b1ecf756f69cda5d56c0ba59a4232ab626bffa380833a8d323ddd4": {
+    "query": "SELECT DISTINCT ON(mr.timestamp) mr.* FROM match_references mr INNER JOIN summoners s ON mr.summoner_id = s.id WHERE s.name = any($1) AND mr.timestamp < $2 ORDER BY mr.timestamp DESC LIMIT $3",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "game_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "summoner_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 2,
+          "name": "role",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "platform_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "champion",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "queue",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 6,
+          "name": "lane",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "timestamp",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "TextArray",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false
+      ]
     }
   },
   "f77e3a2242e989b0d9d004b050c0edb4c1505102653e28c5f019f15b92bdf1f0": {
