@@ -24,7 +24,7 @@ export default defineComponent({
 
         onMounted(async () => {
             const headers = await getAuthHeader();
-            const response = await fetch(backendUrl("/api/records/?names=Kruptein"), headers);
+            const response = await fetch(backendUrl("/api/records/"), headers);
             const [recordsData, matchesData] = JSON.parse(await response.json());
             records.value = recordsData;
             matches.value = matchesData;

@@ -1,11 +1,11 @@
 <script lang="ts">
 import { computed, defineComponent, onMounted, ref } from "vue";
 
-import { backendUrl, getAuthHeader } from "../api/utils";
-import { getSummonerIconImage } from "../common";
-import { Connection } from "../models/connections";
-import { connectionStore } from "../store/connections";
-import { alphSort } from "../utils";
+import { backendUrl, getAuthHeader } from "../../api/utils";
+import { getSummonerIconImage } from "../../common";
+import { Connection } from "../../models/connections";
+import { connectionStore } from "../../store/connections";
+import { alphSort } from "../../utils";
 
 // eslint-disable-next-line import/no-unused-modules
 export default defineComponent({

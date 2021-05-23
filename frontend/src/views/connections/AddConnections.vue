@@ -1,7 +1,7 @@
 <script lang="ts">
 import { defineComponent, ref } from "vue";
 
-import { backendUrl, getAuthHeader } from "../api/utils";
+import { backendUrl, getAuthHeader } from "../../api/utils";
 
 // eslint-disable-next-line import/no-unused-modules
 export default defineComponent({

@@ -2,12 +2,14 @@
 import { computed, defineComponent, onMounted, reactive } from "vue";
 import { useRoute } from "vue-router";
 
-import { backendUrl, getAuthHeader } from "../api/utils";
-import { getSummonerIconImage } from "../common";
-import MatchFetcher from "../components/MatchFetcher.vue";
-import { Summoner } from "../models/match";
-import { connectionStore } from "../store/connections";
-import { decimalRound } from "../utils";
+import { backendUrl, getAuthHeader } from "../../api/utils";
+import { getSummonerIconImage } from "../../common";
+import MatchFetcher from "../../components/MatchFetcher.vue";
+import { Summoner } from "../../models/match";
+import { connectionStore } from "../../store/connections";
+import { decimalRound } from "../../utils";
+
+import ConnectionHeader from "./ConnectionHeader.vue";
 
 interface QuickStats {
     totalPlayed: number;
@@ -24,7 +26,7 @@ interface QuickStats {
 
 // eslint-disable-next-line import/no-unused-modules
 export default defineComponent({
-    components: { MatchFetcher },
+    components: { ConnectionHeader, MatchFetcher },
     setup() {
         const route = useRoute();
 
@@ -49,7 +51,7 @@ export default defineComponent({
             }
 
             const headers = await getAuthHeader();
-            const response = await fetch(backendUrl(`/api/summoners/${route.params.name}/`), headers);
+            const response = await fetch(backendUrl(`/api/summoners/${route.params.name}/?stats=true`), headers);
             const data: { core: Summoner; quickStats?: QuickStats } = JSON.parse(await response.json());
             connectionStore.addConnections(data.core);
 
@@ -71,16 +73,7 @@ export default defineComponent({
 
 <template>
     <main>
-        <div id="connection-name">
-            <div id="icon" v-if="connection !== undefined">
-                <img :src="getSummonerIconImage(connection.profileIconId)" />
-            </div>
-            <div id="name">
-                <div>Surveillance report for</div>
-                <template v-if="connection === undefined">... LOADING ...</template>
-                <template v-else>{{ connection.name }} [{{ connection.summonerLevel }}]</template>
-            </div>
-        </div>
+        <ConnectionHeader active="overview" :apiLoad="false" />
 
         <div id="stats">
             <div class="header">Quick Stats</div>
@@ -111,7 +104,6 @@ export default defineComponent({
             </Suspense>
         </div>
     </main>
-    <nav aria-label="connection menu"></nav>
 </template>
 
 <style scoped lang="scss">
@@ -127,38 +119,9 @@ main {
 
     display: grid;
     grid-template-areas:
-        "name      name"
-        "stats     lastgame";
-
-    #connection-name {
-        grid-area: name;
-        font-size: 50px;
-        font-weight: bold;
-        display: flex;
-        justify-content: flex-start;
-        align-items: center;
-
-        #icon {
-            img {
-                width: 150px;
-            }
-            margin-right: 2em;
-        }
-
-        #name {
-            position: relative;
-
-            div {
-                position: absolute;
-                top: -20px;
-                left: -50px;
-
-                font-weight: normal;
-                font-size: 25px;
-                font-style: italic;
-            }
-        }
-    }
+        "header header"
+        "stats  lastgame";
+    grid-template-rows: 250px 1fr;
 
     #stats {
         grid-area: stats;

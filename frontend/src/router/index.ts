@@ -25,25 +25,32 @@ const routes: Array<RouteRecordRaw> = [
         path: "/connection/:name",
         name: "Connection",
         beforeEnter: auth0.routeGuard,
-        component: () => import(/* webpackChunkName: "connectionfeed" */ "../views/Connection.vue"),
+        component: () => import(/* webpackChunkName: "connection" */ "../views/connections/Connection.vue"),
     },
     {
         path: "/connection/:name/feed",
         name: "ConnectionFeed",
         beforeEnter: auth0.routeGuard,
-        component: () => import(/* webpackChunkName: "connectionfeed" */ "../views/ConnectionFeed.vue"),
+        component: () => import(/* webpackChunkName: "connectionfeed" */ "../views/connections/ConnectionFeed.vue"),
+    },
+    {
+        path: "/connection/:name/records",
+        name: "ConnectionRecords",
+        beforeEnter: auth0.routeGuard,
+        component: () =>
+            import(/* webpackChunkName: "connectionrecords" */ "../views/connections/ConnectionRecords.vue"),
     },
     {
         path: "/connections",
         name: "Connections",
         beforeEnter: auth0.routeGuard,
-        component: () => import(/* webpackChunkName: "connections" */ "../views/Connections.vue"),
+        component: () => import(/* webpackChunkName: "connections" */ "../views/connections/Connections.vue"),
     },
     {
         path: "/connections/add",
         name: "AddConnections",
         beforeEnter: auth0.routeGuard,
-        component: () => import(/* webpackChunkName: "addconnections" */ "../views/AddConnections.vue"),
+        component: () => import(/* webpackChunkName: "addconnections" */ "../views/connections/AddConnections.vue"),
     },
 ];
 
