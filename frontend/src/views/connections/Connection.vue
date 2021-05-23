@@ -80,7 +80,7 @@ export default defineComponent({
             <div></div>
             <div class="stats-label">All time</div>
             <div class="stats-label">This season</div>
-            <div class="stats-label"># Played played</div>
+            <div class="stats-label"># Games played</div>
             <div>{{ stats.totalPlayed }}</div>
             <div>{{ stats.seasonPlayed }}</div>
             <div class="stats-label"># wins</div>
