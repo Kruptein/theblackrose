@@ -98,7 +98,10 @@ export default defineComponent({
                         :class="{
                             'game-won': participant.general.win,
                             'is-connection':
-                                connections.length === 0 || connections.includes(participant.summoner.name),
+                                connections.length === 0 ||
+                                connections.includes(
+                                    participant.summoner ? participant.summoner.name : '<Unknown Summoner>',
+                                ),
                         }"
                         v-for="participant of match.participants"
                         :key="participant.participant.gameId + '-' + participant.participant.id"
@@ -113,7 +116,7 @@ export default defineComponent({
                             class="champion"
                         />
                         <div class="column">
-                            {{ participant.summoner.name }}
+                            {{ participant.summoner?.name ?? "Unknown Summoner" }}
                         </div>
                         <div class="column">
                             {{ participant.kills.kills }}/{{ participant.kills.deaths }}/{{ participant.kills.assists }}

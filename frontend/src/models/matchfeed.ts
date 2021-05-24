@@ -10,7 +10,7 @@ export interface MatchFeedElement {
     matchInfo: Match;
     participants: {
         participant: Participant;
-        summoner: Summoner;
+        summoner?: Summoner;
         general: ParticipantStatsGeneral;
         kills: ParticipantStatsKills;
     }[];

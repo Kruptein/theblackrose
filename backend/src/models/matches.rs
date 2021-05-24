@@ -1,10 +1,10 @@
 use super::summoners::Summoner;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all(serialize = "camelCase"))]
 pub struct MatchFeedParticipant {
     pub participant: Participant,
-    pub summoner: Summoner,
+    pub summoner: Option<Summoner>,
     pub general: ParticipantStatsGeneral,
     pub kills: ParticipantStatsKills,
 }

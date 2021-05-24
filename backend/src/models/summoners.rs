@@ -1,4 +1,4 @@
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all(serialize = "camelCase"))]
 pub struct Summoner {
     #[serde(skip)]

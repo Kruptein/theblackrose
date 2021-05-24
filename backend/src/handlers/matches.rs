@@ -31,7 +31,7 @@ pub async fn get_match_reference(
 pub async fn get_game_info(game_id: i64, conn: &PgPool) -> Result<MatchFeedElement, Error> {
     let match_info = get_match_details(conn, game_id).await?;
 
-    let participants = query_as!(MatchFeedParticipant, r#"SELECT p as "participant!: Participant", psg as "general!: ParticipantStatsGeneral", psk as "kills!: ParticipantStatsKills", s as "summoner!: Summoner" FROM participants p INNER JOIN participant_stats_general psg ON psg.participant_id = p.id INNER JOIN participant_stats_kills psk ON psk.participant_id = p.id INNER JOIN summoners s ON p.summoner_id = s.id WHERE p.game_id = $1 ORDER BY psg.win"#, game_id).fetch_all(conn).await.unwrap();
+    let participants = query_as!(MatchFeedParticipant, r#"SELECT p as "participant!: Participant", psg as "general!: ParticipantStatsGeneral", psk as "kills!: ParticipantStatsKills", s as "summoner: Summoner" FROM participants p INNER JOIN participant_stats_general psg ON psg.participant_id = p.id INNER JOIN participant_stats_kills psk ON psk.participant_id = p.id LEFT OUTER JOIN summoners s ON p.summoner_id = s.id WHERE p.game_id = $1 ORDER BY psg.win"#, game_id).fetch_all(conn).await.unwrap();
 
     Ok(MatchFeedElement {
         match_info,
