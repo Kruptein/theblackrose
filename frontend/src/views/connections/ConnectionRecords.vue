@@ -3,7 +3,7 @@ import { defineComponent, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import { backendUrl, getAuthHeader } from "../../api/utils";
-import MatchList from "../../components/MatchList.vue";
+import Records from "../../components/Records.vue";
 import { MatchFeedElement } from "../../models/matchfeed";
 import { getQueueFromId } from "../../models/queue";
 import { RecordType } from "../../models/records";
@@ -14,8 +14,7 @@ type Record = { id: number; recordType: number; value: number; name: string; que
 
 // eslint-disable-next-line import/no-unused-modules
 export default defineComponent({
-    name: "Records",
-    components: { ConnectionHeader, MatchList },
+    components: { ConnectionHeader, Records },
     setup() {
         const route = useRoute();
 
@@ -46,16 +45,7 @@ export default defineComponent({
                 <h1>Waiting for server data</h1>
             </template>
             <template v-else>
-                <div style="display: contents">
-                    <div v-for="(record, i) in records" class="record-title" :key="record.id">
-                        <span class="font-semi-bold">{{ RecordType[record.recordType] }}</span>
-                        in {{ getQueueFromId(record.queueId) }} by {{ record.name }}
-                        :
-                        <span class="font-semi-bold">{{ record.value }}</span>
-                        <span class="gameId" style="font-size: xx-small">[{{ record.gameId }}]</span>
-                        <MatchList :match-data="[matches[i]]" :visible-names="[record.name]" />
-                    </div>
-                </div>
+                <Records :matches="matches" :records="records" />
             </template>
         </div>
     </main>
@@ -76,14 +66,6 @@ main {
 
     #records {
         grid-area: records;
-
-        .gameId {
-            display: none;
-        }
-
-        .record-title:hover > .gameId {
-            display: block;
-        }
     }
 }
 </style>
