@@ -18,8 +18,11 @@ export async function fetchMatchFeed(filter?: MatchFeedFilter): Promise<MatchFee
     if (filter?.names) {
         queries.push(`names=${filter.names}`);
     }
-    if (filter?.start !== undefined) {
-        queries.push(`start=${filter.start}`);
+    if (filter?.after !== undefined) {
+        queries.push(`after=${filter.after}`);
+    }
+    if (filter?.before !== undefined) {
+        queries.push(`before=${filter.before}`);
     }
     if (filter?.length !== undefined) {
         queries.push(`length=${filter.length}`);

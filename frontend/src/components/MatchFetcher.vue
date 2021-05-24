@@ -20,14 +20,14 @@ export default defineComponent({
 
         const loadMoreData = async (): Promise<void> => {
             matches.value.push(...(await fetchMatchFeed(filter)));
-            filter.start = matches.value[matches.value.length - 1].matchInfo.gameCreation;
+            filter.before = matches.value[matches.value.length - 1].matchInfo.gameCreation;
         };
 
         const [matchData, connectionData] = await Promise.all([fetchMatchFeed(filter), fetchConnections()]);
 
         matches.value = matchData;
         connections.value = connectionData;
-        filter.start = matches.value[matches.value.length - 1].matchInfo.gameCreation;
+        filter.before = matches.value[matches.value.length - 1].matchInfo.gameCreation;
 
         return {
             connections,

@@ -11,7 +11,8 @@ use crate::{
 #[derive(Deserialize)]
 pub struct MatchFilter {
     names: Option<String>,
-    start: Option<i64>,
+    after: Option<i64>,
+    before: Option<i64>,
     length: Option<i8>,
 }
 
@@ -22,8 +23,12 @@ impl MatchFilter {
             .map(|names| names.split(",").map(|name| name.to_owned()).collect())
     }
 
-    pub fn get_start_time(&self) -> Option<i64> {
-        self.start
+    pub fn get_before_time(&self) -> Option<i64> {
+        self.before
+    }
+
+    pub fn get_after_time(&self) -> Option<i64> {
+        self.after
     }
 
     pub fn get_length(&self) -> i8 {

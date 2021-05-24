@@ -2,7 +2,8 @@ import { Match, Participant, Summoner, ParticipantStatsGeneral, ParticipantStats
 
 export interface MatchFeedFilter {
     names?: string[];
-    start?: number;
+    after?: number;
+    before?: number;
     length?: number;
 }
 
