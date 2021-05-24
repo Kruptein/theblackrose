@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, onMounted, ref, watchEffect } from "vue";
+import { defineComponent, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import { backendUrl, getAuthHeader } from "../../api/utils";
@@ -22,10 +22,6 @@ export default defineComponent({
         const loading = ref(true);
         const records = ref<Record[]>([]);
         const matches = ref<MatchFeedElement[]>([]);
-
-        watchEffect(() => {
-            console.log(matches.value);
-        });
 
         onMounted(async () => {
             const headers = await getAuthHeader();
