@@ -9,6 +9,9 @@
     },
     "dependencies": {
         "@auth0/auth0-spa-js": "^1.15.0",
+        "@fortawesome/fontawesome-svg-core": "^1.2.35",
+        "@fortawesome/free-solid-svg-icons": "^5.15.3",
+        "@fortawesome/vue-fontawesome": "^3.0.0-3",
         "core-js": "^3.12.1",
         "vue": "^3.0.11",
         "vue-router": "^4.0.8"

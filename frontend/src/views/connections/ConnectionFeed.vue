@@ -1,39 +1,62 @@
 <script lang="ts">
-import { defineComponent } from "vue";
+import { computed, defineComponent, ref } from "vue";
 import { useRoute } from "vue-router";
 
-import { backendUrl, getAuthHeader } from "../../api/utils";
+// import { backendUrl, getAuthHeader } from "../../api/utils";
+import ConnectionHeader from "../../components/ConnectionHeader.vue";
+import DefaultHeader from "../../components/DefaultHeader.vue";
+import Filter from "../../components/Filter.vue";
 import MatchFetcher from "../../components/MatchFetcher.vue";
-
-import ConnectionHeader from "./ConnectionHeader.vue";
+import { friendlyQueueNames } from "../../models/queue";
 
 // eslint-disable-next-line import/no-unused-modules
 export default defineComponent({
-    name: "MatchFeed",
-    components: { ConnectionHeader, MatchFetcher },
+    components: { ConnectionHeader, DefaultHeader, Filter, MatchFetcher },
 
     setup() {
         const route = useRoute();
 
-        async function refresh(): Promise<void> {
-            const headers = await getAuthHeader();
-            await fetch(backendUrl(`/api/connection/${route.params.name}/refresh`), headers);
+        const isConnectionFeed = computed(() => route.name === "ConnectionFeed");
+
+        const names = computed(() => (isConnectionFeed.value ? [route.params.name] : []));
+
+        const showFilter = ref(false);
+
+        const queueDefaults = new Set(Object.keys(friendlyQueueNames).map((k) => Number.parseInt(k)));
+        const queueFilter = ref<number[]>([...queueDefaults]);
+
+        // async function refresh(): Promise<void> {
+        //     const headers = await getAuthHeader();
+        //     await fetch(backendUrl(`/api/connection/${route.params.name}/refresh`), headers);
+        // }
+
+        function setFilter(data: number[]): void {
+            queueFilter.value = [...data];
         }
 
-        return { refresh };
+        return { isConnectionFeed, names, showFilter, queueDefaults, queueFilter, setFilter };
     },
 });
 </script>
 
 <template>
     <main>
-        <ConnectionHeader active="matches" />
+        <ConnectionHeader v-if="isConnectionFeed" active="matches" />
+        <DefaultHeader v-else />
         <div id="matches">
             <Suspense>
                 <template #default>
-                    <div style="display: contents">
-                        <h1>Recent observations</h1>
-                        <MatchFetcher :filter="{ names: [$route.params.name] }" />
+                    <div :key="1">
+                        <div id="matches-title">
+                            <h1>Recent observations</h1>
+                            <div id="matches-filter-toggle" @click="showFilter = !showFilter">
+                                [
+                                <font-awesome-icon icon="filter" />
+                                ]
+                            </div>
+                        </div>
+                        <Filter v-show="showFilter" :defaults="queueDefaults" @filter="setFilter" />
+                        <MatchFetcher :names="names" :queues="queueFilter" />
                     </div>
                 </template>
                 <template #fallback>
@@ -55,10 +78,25 @@ main {
     grid-template-areas:
         "header"
         "matches";
-    grid-template-rows: 250px 1fr;
+    grid-template-rows: auto 1fr;
 
     #matches {
         grid-area: matches;
+
+        #matches-title {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            #matches-filter-toggle {
+                margin-left: 1em;
+
+                &:hover {
+                    cursor: pointer;
+                    font-style: italic;
+                }
+            }
+        }
     }
 }
 </style>

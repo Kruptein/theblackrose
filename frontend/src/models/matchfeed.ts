@@ -5,6 +5,7 @@ export interface MatchFeedFilter {
     after?: number;
     before?: number;
     length?: number;
+    queues?: number[];
 }
 
 export interface MatchFeedElement {

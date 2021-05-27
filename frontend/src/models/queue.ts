@@ -198,7 +198,7 @@ enum Queue {
     SUMMONERS_RIFT_TUTORIAL_3 = 2020,
 }
 
-const friendlyQueueNames: Record<number, string> = {
+export const friendlyQueueNames: Record<number, string> = {
     0: "Custom",
     2: "Normal Blind",
     4: "Ranked Solo",
@@ -213,7 +213,7 @@ const friendlyQueueNames: Record<number, string> = {
     31: "Co-op vs AI intro",
     32: "Co-op vs AI beginner",
     33: "Co-op vs AI intermediate",
-    41: "Ranked Twisted Treeline",
+    41: "Ranked team Twisted Treeline",
     42: "Ranked team",
     52: "Co-op vs AI Twisted Treeline",
     61: "Team builder",
@@ -289,3 +289,83 @@ export function getQueueFromId(queueId: number): string {
     }
     return Queue[queueId];
 }
+
+export const queueSeriousness = {
+    Normal: [
+        2, 8, 14, 16, 17, 61, 65, 70, 72, 73, 75, 76, 78, 96, 98, 100, 300, 310, 313, 315, 317, 318, 325, 400, 430, 450,
+        460, 600, 610, 900, 910, 920, 940, 1000, 1010, 1020, 1300,
+    ],
+    Ranked: [4, 6, 9, 41, 42, 410, 420, 440, 470, 700],
+    Bots: [
+        7, 25, 31, 32, 33, 52, 67, 83, 91, 92, 93, 800, 810, 820, 830, 840, 850, 950, 960, 980, 990, 1030, 1040, 1050,
+        1060, 1070, 2000, 2010, 2020,
+    ],
+};
+
+export const queuePickType = {
+    Blind: [2, 7, 8, 16, 25, 31, 32, 33, 52, 75, 83, 91, 92, 93, 430, 460, 800, 810, 820, 830, 840, 850, 950, 960],
+    Draft: [4, 6, 9, 14, 17, 41, 42, 61, 400, 410, 420, 440, 470, 700],
+    "Blind Draft": [72, 73, 76, 96, 98, 300, 313, 315, 317, 900, 910, 920, 940, 1300],
+    Random: [65, 67, 100, 318, 325, 450, 1010],
+    Vote: [70, 1020],
+    "Mirror Vote": [78],
+    Nemesis: [310],
+    "Limited Blind": [600, 980, 990, 1000, 1030, 1040, 1050, 1060, 1070],
+    Fixed: [610, 2000, 2010, 2020],
+};
+
+export const queuePlayerSize = {
+    "1": [72],
+    "2": [73],
+    "3": [8, 9, 41, 52, 460, 470, 610, 800, 810, 820],
+    "5": [
+        2, 4, 6, 7, 14, 16, 17, 25, 31, 32, 33, 42, 61, 65, 67, 70, 76, 78, 83, 91, 92, 93, 96, 100, 300, 310, 313, 315,
+        317, 318, 325, 400, 410, 420, 430, 440, 450, 600, 700, 830, 840, 850, 900, 910, 920, 940, 950, 960, 980, 990,
+        1010, 1020, 1030, 1040, 1050, 1060, 1070, 1300, 2000, 2010, 2020,
+    ],
+    "6": [75, 98, 1000],
+};
+
+export const queueMap = {
+    "Summoner's Rift": [
+        2, 4, 6, 7, 14, 31, 32, 33, 42, 61, 70, 75, 76, 83, 91, 92, 310, 313, 315, 318, 325, 400, 410, 420, 430, 440,
+        600, 700, 830, 840, 850, 900, 940, 950, 960, 1010, 1020, 2000, 2010, 2020,
+    ],
+    "Twisted Treeline": [8, 9, 41, 52, 98, 460, 470, 800, 810, 820],
+    "Crystal Scar": [16, 17, 25, 96, 317, 910],
+    "Howling Abyss": [65, 67, 72, 73, 78, 300, 450, 920],
+    "Butcher's Bridge": [100],
+    "Cosmic Ruins": [610],
+    "Valoran City Park": [980, 990],
+    "Substructure 43": [1000],
+    "Crash Site": [1030, 1040, 1050, 1060, 1070],
+    "Temple of Lily and Lotus": [1300],
+};
+
+export const queueMode = {
+    Normal: [2, 8, 14, 61, 310, 325, 400, 430, 460],
+    "Ranked Solo": [4, 420],
+    "Ranked Flex": [9, 410, 440, 470],
+    "Ranked Team": [6, 41, 42],
+    Clash: [700],
+    "Co-op vs AI": [7, 25, 31, 32, 33, 52, 67, 83, 800, 810, 820, 830, 840, 850],
+    Dominion: [16, 17, 25],
+    "Definitely Not Dominion": [317],
+    ARAM: [65, 67, 100, 450],
+    "Snowdown Showdown": [72, 73],
+    Hexakill: [75, 98],
+    URF: [76, 83, 318, 900, 1010],
+    OFA: [70, 78, 1020],
+    "Doom bots": [91, 92, 93, 950, 960],
+    Ascension: [96, 910],
+    "Poro King": [300, 920],
+    "Black Market Brawlers": [313],
+    "Nexus Siege": [315, 940],
+    "Blood Hunt Assassin": [600],
+    "Dark Star Singularity": [610],
+    Invasion: [980, 990],
+    Overcharge: [1000],
+    "Odyssey: Extraction": [1030, 1040, 1050, 1060, 1070],
+    "Nexus Blitz": [1300],
+    Tutorial: [2000, 2010, 2020],
+};

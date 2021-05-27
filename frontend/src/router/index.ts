@@ -3,6 +3,11 @@ import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import auth0 from "../plugins/auth0";
 import Home from "../views/Home.vue";
 
+const ConnectionFeed = (): Promise<typeof import("*.vue")> =>
+    import(/* webpackChunkName: "connectionfeed" */ "../views/connections/ConnectionFeed.vue");
+const ConnectionRecords = (): Promise<typeof import("*.vue")> =>
+    import(/* webpackChunkName: "connectionrecords" */ "../views/connections/ConnectionRecords.vue");
+
 const routes: Array<RouteRecordRaw> = [
     {
         path: "/",
@@ -13,13 +18,13 @@ const routes: Array<RouteRecordRaw> = [
         path: "/feed",
         name: "MatchFeed",
         beforeEnter: auth0.routeGuard,
-        component: () => import(/* webpackChunkName: "matchfeed" */ "../views/MatchFeed.vue"),
+        component: ConnectionFeed,
     },
     {
         path: "/records",
         name: "Records",
         beforeEnter: auth0.routeGuard,
-        component: () => import(/* webpackChunkName: "records" */ "../views/Records.vue"),
+        component: ConnectionRecords,
     },
     {
         path: "/connection/:name",
@@ -31,14 +36,13 @@ const routes: Array<RouteRecordRaw> = [
         path: "/connection/:name/feed",
         name: "ConnectionFeed",
         beforeEnter: auth0.routeGuard,
-        component: () => import(/* webpackChunkName: "connectionfeed" */ "../views/connections/ConnectionFeed.vue"),
+        component: ConnectionFeed,
     },
     {
         path: "/connection/:name/records",
         name: "ConnectionRecords",
         beforeEnter: auth0.routeGuard,
-        component: () =>
-            import(/* webpackChunkName: "connectionrecords" */ "../views/connections/ConnectionRecords.vue"),
+        component: ConnectionRecords,
     },
     {
         path: "/connections",

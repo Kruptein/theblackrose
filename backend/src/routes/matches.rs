@@ -14,6 +14,7 @@ pub struct MatchFilter {
     after: Option<i64>,
     before: Option<i64>,
     length: Option<i8>,
+    queues: Option<String>,
 }
 
 impl MatchFilter {
@@ -33,6 +34,16 @@ impl MatchFilter {
 
     pub fn get_length(&self) -> i8 {
         self.length.unwrap_or(10)
+    }
+
+    pub fn get_queues(&self) -> Option<Vec<i32>> {
+        // todo: UPDATE DEFAULT ARRAY HERE
+        self.queues.as_ref().map(|queues| {
+            queues
+                .split(",")
+                .map(|queue| queue.parse::<i32>().unwrap())
+                .collect()
+        })
     }
 }
 

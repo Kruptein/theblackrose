@@ -39,7 +39,37 @@ pub async fn get_connection_records(
         .collect::<Vec<String>>()
         .join(",");
 
-    let records = query_as::<_, ApiRecord>(format!("select r.id, r.record_type, r.value, r.game_id, s.name, m.queue_id FROM records r INNER JOIN summoners s ON r.summoner_id = s.id INNER JOIN matches m ON m.game_id = r.game_id INNER JOIN (SELECT record_type, MAX(value) as max_value FROM records WHERE summoner_id IN ({}) GROUP BY record_type) l ON r.record_type = l.record_type AND r.value = l.max_value WHERE r.summoner_id IN ({}) ORDER BY record_type;", user_connections, user_connections).as_str()).fetch_all(conn).await?;
+    let records = query_as::<_, ApiRecord>(
+        format!(
+            "
+        SELECT r.id, r.record_type, r.value, r.game_id, s.name, m.queue_id
+        FROM records r
+        INNER JOIN summoners s ON r.summoner_id = s.id
+        INNER JOIN matches m ON m.game_id = r.game_id
+        INNER JOIN (
+            SELECT record_type, MAX(value) as max_value
+            FROM records rr
+            INNER JOIN matches mm ON mm.game_id = rr.game_id
+            WHERE
+                summoner_id IN ({})
+                AND mm.queue_id IN ({})
+            GROUP BY record_type
+        ) l ON
+            r.record_type = l.record_type
+            AND r.value = l.max_value
+        WHERE
+            r.summoner_id IN ({})
+            AND m.queue_id IN ({})
+        ORDER BY record_type;",
+            user_connections,
+            filter.get_queues().unwrap_or(&"450".to_owned()),
+            user_connections,
+            filter.get_queues().unwrap_or(&"450".to_owned()),
+        )
+        .as_str(),
+    )
+    .fetch_all(conn)
+    .await?;
 
     let mut match_info_vec: Vec<MatchFeedElement> = vec![];
     for record in records.iter() {

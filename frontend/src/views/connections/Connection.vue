@@ -4,12 +4,12 @@ import { useRoute } from "vue-router";
 
 import { backendUrl, getAuthHeader } from "../../api/utils";
 import { getSummonerIconImage } from "../../common";
+import ConnectionHeader from "../../components/ConnectionHeader.vue";
 import MatchFetcher from "../../components/MatchFetcher.vue";
 import { Summoner } from "../../models/match";
+import { friendlyQueueNames } from "../../models/queue";
 import { connectionStore } from "../../store/connections";
 import { decimalRound } from "../../utils";
-
-import ConnectionHeader from "./ConnectionHeader.vue";
 
 interface QuickStats {
     totalPlayed: number;
@@ -29,6 +29,8 @@ export default defineComponent({
     components: { ConnectionHeader, MatchFetcher },
     setup() {
         const route = useRoute();
+
+        const queueDefaults = new Set(Object.keys(friendlyQueueNames).map((k) => Number.parseInt(k)));
 
         const stats = reactive({
             totalPlayed: 0,
@@ -66,6 +68,7 @@ export default defineComponent({
 
             connection,
             stats,
+            queueDefaults,
         };
     },
 });
@@ -100,7 +103,7 @@ export default defineComponent({
         <div id="lastgame" v-if="connection !== undefined">
             <div class="header">Last 3 games</div>
             <Suspense>
-                <MatchFetcher :filter="{ names: [$route.params.name], length: 3 }" :showMore="false" />
+                <MatchFetcher :names="[$route.params.name]" :length="3" :queues="queueDefaults" :showMore="false" />
             </Suspense>
         </div>
     </main>

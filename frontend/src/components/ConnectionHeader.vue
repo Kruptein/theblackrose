@@ -2,10 +2,10 @@
 import { computed, defineComponent, onMounted } from "vue";
 import { useRoute } from "vue-router";
 
-import { backendUrl, getAuthHeader } from "../../api/utils";
-import { getSummonerIconImage } from "../../common";
-import { Summoner } from "../../models/match";
-import { connectionStore } from "../../store/connections";
+import { backendUrl, getAuthHeader } from "../api/utils";
+import { getSummonerIconImage } from "../common";
+import { Summoner } from "../models/match";
+import { connectionStore } from "../store/connections";
 
 export default defineComponent({
     props: { active: { type: String, required: true }, apiLoad: { type: Boolean, default: true } },

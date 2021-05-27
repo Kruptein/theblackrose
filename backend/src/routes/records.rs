@@ -10,6 +10,7 @@ use crate::{
 #[derive(Debug, Deserialize)]
 pub struct RecordFilter {
     names: Option<String>,
+    queues: Option<String>,
 }
 
 impl RecordFilter {
@@ -17,6 +18,11 @@ impl RecordFilter {
         self.names
             .as_ref()
             .map(|names| names.split(",").map(|name| name.to_owned()).collect())
+    }
+
+    pub fn get_queues(&self) -> Option<&String> {
+        // todo: UPDATE DEFAULT ARRAY HERE
+        self.queues.as_ref()
     }
 }
 

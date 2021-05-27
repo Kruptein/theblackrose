@@ -1,20 +1,21 @@
 <script lang="ts">
-import { defineComponent, onMounted, ref } from "vue";
+import { computed, defineComponent, ref, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 
-import { backendUrl, getAuthHeader } from "../../api/utils";
+import { fetchWithQuery } from "../../api/utils";
+import ConnectionHeader from "../../components/ConnectionHeader.vue";
+import DefaultHeader from "../../components/DefaultHeader.vue";
+import Filter from "../../components/Filter.vue";
 import Records from "../../components/Records.vue";
 import { MatchFeedElement } from "../../models/matchfeed";
-import { getQueueFromId } from "../../models/queue";
+import { getQueueFromId, queueMode, queueSeriousness } from "../../models/queue";
 import { RecordType } from "../../models/records";
-
-import ConnectionHeader from "./ConnectionHeader.vue";
 
 type Record = { id: number; recordType: number; value: number; name: string; queueId: number; gameId: number };
 
 // eslint-disable-next-line import/no-unused-modules
 export default defineComponent({
-    components: { ConnectionHeader, Records },
+    components: { ConnectionHeader, DefaultHeader, Filter, Records },
     setup() {
         const route = useRoute();
 
@@ -22,29 +23,66 @@ export default defineComponent({
         const records = ref<Record[]>([]);
         const matches = ref<MatchFeedElement[]>([]);
 
-        onMounted(async () => {
-            const headers = await getAuthHeader();
-            const response = await fetch(backendUrl(`/api/records/?names=${route.params.name}`), headers);
-            const [recordsData, matchesData] = JSON.parse(await response.json());
+        const showFilter = ref(false);
+
+        const isConnectionRecords = computed(() => route.name === "ConnectionRecords");
+
+        const defaultSelectedQueues = new Set([
+            ...queueMode.Normal,
+            ...queueMode["Ranked Solo"],
+            ...queueMode["Ranked Flex"],
+            ...queueMode["Ranked Team"],
+            ...queueMode.Clash,
+            ...queueMode.ARAM,
+        ]);
+        for (const queue of queueSeriousness.Bots) defaultSelectedQueues.delete(queue);
+
+        const queueFilter = ref<number[]>([...defaultSelectedQueues]);
+
+        watchEffect(async () => {
+            const [recordsData, matchesData] = await fetchWithQuery<[Record[], MatchFeedElement[]]>("/api/records/", {
+                names: isConnectionRecords.value ? [route.params.name as string] : undefined,
+                queues: queueFilter.value,
+            });
             records.value = recordsData;
             matches.value = matchesData;
             loading.value = false;
         });
 
-        return { getQueueFromId, loading, matches, records, RecordType };
+        return {
+            isConnectionRecords,
+            getQueueFromId,
+            loading,
+            matches,
+            records,
+            RecordType,
+            showFilter,
+            defaultSelectedQueues,
+            queueFilter,
+        };
     },
 });
 </script>
 
 <template>
     <main>
-        <ConnectionHeader active="records" />
+        <ConnectionHeader v-if="isConnectionRecords" active="records" />
+        <DefaultHeader v-else />
 
         <div id="records">
             <template v-if="loading">
                 <h1>Waiting for server data</h1>
             </template>
             <template v-else>
+                <div id="records-title">
+                    <h1>Records</h1>
+                    <div id="records-filter-toggle" @click="showFilter = !showFilter">
+                        [
+                        <font-awesome-icon icon="filter" />
+                        ]
+                    </div>
+                </div>
+                <Filter v-show="showFilter" :defaults="defaultSelectedQueues" @filter="queueFilter = $event" />
                 <Records :matches="matches" :records="records" />
             </template>
         </div>
@@ -66,6 +104,21 @@ main {
 
     #records {
         grid-area: records;
+
+        #records-title {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            #records-filter-toggle {
+                margin-left: 1em;
+
+                &:hover {
+                    cursor: pointer;
+                    font-style: italic;
+                }
+            }
+        }
     }
 }
 </style>
