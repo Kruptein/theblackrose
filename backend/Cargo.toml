@@ -24,7 +24,7 @@ env_logger = "0.8.3"
 jsonwebtoken = "7.2.0"
 log = "0.4.14"
 reqwest = "0.11.3"
-riven = "1.12.1"
+riven = "1.13.3"
 serde = "1.0.126"
 serde_json = "1.0.64"
 sqlx = { version = "0.5.3", features = ["macros", "offline", "postgres", "runtime-tokio-native-tls", "chrono"] }
