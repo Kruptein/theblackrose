@@ -287,7 +287,7 @@ async fn get_match_details(api: &RiotApi, game_id: i64) -> Option<Match> {
     match api.match_v4().get_match(Region::EUW, game_id).await {
         Ok(result) => result,
         Err(e) => {
-            println!("Match details fetching failed [{:?}]", e);
+            println!("Match details fetching failed [{:?}] (game={})", e, game_id);
             None
         }
     }
