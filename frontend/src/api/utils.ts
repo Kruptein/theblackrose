@@ -2,7 +2,7 @@ import { MatchFeedFilter } from "../models/matchfeed";
 import { authPlugin } from "../plugins/auth0";
 
 export function backendUrl(path: string): string {
-    return `${process.env.VUE_APP_BACKEND_LOCATION}${path}`;
+    return `${import.meta.env.VITE_BACKEND_LOCATION}${path}`;
 }
 
 export async function getAuthHeader(): Promise<{ headers: { Authorization: string } }> {

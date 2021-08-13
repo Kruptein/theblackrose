@@ -84,9 +84,9 @@ async function init(onRedirectCallback: (url: string) => void): Promise<{ instal
     const redirectUri = window.location.origin;
 
     client = await createAuth0Client({
-        domain: process.env.VUE_APP_AUTH0_DOMAIN,
-        client_id: process.env.VUE_APP_AUTH0_CLIENT_KEY,
-        audience: process.env.VUE_APP_AUTH0_AUDIENCE,
+        domain: import.meta.env.VITE_AUTH0_DOMAIN,
+        client_id: import.meta.env.VITE_AUTH0_CLIENT_KEY,
+        audience: import.meta.env.VITE_AUTH0_AUDIENCE,
         redirect_uri: redirectUri,
     });
 
