@@ -11,14 +11,21 @@ export default defineComponent({
         const route = useRoute();
         const summonerName = route.params.summoner;
         const liveStuff = ref<{ summoner: string; champion: number; wins: number; total: number }[]>();
+        const error = ref("");
 
         onMounted(async () => {
             const headers = await getAuthHeader();
             const response = await fetch(backendUrl(`/api/live/${summonerName}/`), headers);
-            liveStuff.value = JSON.parse(await response.json());
+            if (response.ok) {
+                liveStuff.value = JSON.parse(await response.json());
+                error.value = "";
+            } else {
+                liveStuff.value = [];
+                error.value = await response.text();
+            }
         });
 
-        return { liveStuff, summonerName };
+        return { error, liveStuff, summonerName };
     },
 });
 </script>
@@ -31,5 +38,6 @@ export default defineComponent({
         <div v-for="champ in liveStuff" :key="champ.summoner">
             <div v-if="champ.total > 0">{{ champ.summoner }} - {{ champ.wins }} / {{ champ.total }}</div>
         </div>
+        <div v-if="error">{{ error }}</div>
     </div>
 </template>
