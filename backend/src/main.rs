@@ -36,7 +36,7 @@ use routes::{
 use sqlx::PgPool;
 use tokio::sync::{Mutex, RwLock};
 
-use crate::routes::summoners::get_summoner;
+use crate::routes::{live::get_live_info, summoners::get_summoner};
 
 pub struct AppState {
     db_conn: PgPool,
@@ -98,7 +98,8 @@ fn main() -> std::io::Result<()> {
                         .service(get_summoner)
                         .service(get_notifications)
                         .service(remove_notification)
-                        .service(refresh_connection),
+                        .service(refresh_connection)
+                        .service(get_live_info),
                 )
         })
         .bind("0.0.0.0:9000")

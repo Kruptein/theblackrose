@@ -56,6 +56,12 @@ const routes: Array<RouteRecordRaw> = [
         beforeEnter: auth0.routeGuard,
         component: () => import(/* webpackChunkName: "addconnections" */ "../views/connections/AddConnections.vue"),
     },
+    {
+        path: "/live/:summoner",
+        name: "LiveGame",
+        beforeEnter: auth0.routeGuard,
+        component: () => import(/* webpackChunkName: "liveGame" */ "../views/live/Live.vue"),
+    },
 ];
 
 const router = createRouter({
