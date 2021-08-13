@@ -34,7 +34,7 @@ export default defineComponent({
     <div id="welcome">
         <img src="https://vignette3.wikia.nocookie.net/leagueoflegends/images/6/6c/Black_Rose.png" />
 
-        <h1>Live game info for</h1>
+        <h1>Live game info for {{ summonerName }}</h1>
         <div v-for="champ in liveStuff" :key="champ.summoner">
             <div v-if="champ.total > 0">{{ champ.summoner }} - {{ champ.wins }} / {{ champ.total }}</div>
         </div>
