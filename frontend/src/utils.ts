@@ -1,4 +1,4 @@
-export function decimalRound(num: number, places: number): number {
+export function decimalRound(num: number, places = 2): number {
     const multiplier = 10 * places;
     return Math.round(num * multiplier) / multiplier;
 }

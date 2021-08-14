@@ -25,7 +25,7 @@ export default defineComponent({
         );
 
         const getKda = (stats: ParticipantStatsKills): number => {
-            return decimalRound((stats.kills + stats.assists) / Math.max(stats.deaths, 1), 2);
+            return decimalRound((stats.kills + stats.assists) / Math.max(stats.deaths, 1));
         };
 
         const getAbsoluteTime = (timestamp: number): string => {
@@ -124,7 +124,7 @@ export default defineComponent({
                             KDA: {{ getKda(participant.kills) }}
                         </div>
                         <div class="column">
-                            {{ decimalRound(participant.general.goldEarned / 1000, 2) }}k gold
+                            {{ decimalRound(participant.general.goldEarned / 1000) }}k gold
                             <br />
                             {{ participant.kills.totalMinionsKilled }} cs
                         </div>

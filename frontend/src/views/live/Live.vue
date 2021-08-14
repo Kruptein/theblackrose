@@ -3,6 +3,8 @@ import { defineComponent, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import { backendUrl, getAuthHeader } from "../../api/utils";
+import { getChampionInfo } from "../../ddragon";
+import { decimalRound } from "../../utils";
 
 // eslint-disable-next-line import/no-unused-modules
 export default defineComponent({
@@ -25,7 +27,7 @@ export default defineComponent({
             }
         });
 
-        return { error, liveStuff, summonerName };
+        return { decimalRound, getChampionInfo, error, liveStuff, summonerName };
     },
 });
 </script>
@@ -36,7 +38,11 @@ export default defineComponent({
 
         <h1>Live game info for {{ summonerName }}</h1>
         <div v-for="champ in liveStuff" :key="champ.summoner">
-            <div v-if="champ.total > 0">{{ champ.summoner }} - {{ champ.wins }} / {{ champ.total }}</div>
+            <div v-if="champ.total > 0">
+                {{ champ.summoner }} - {{ getChampionInfo(103).name }} - {{ champ.wins }} / {{ champ.total }} ({{
+                    decimalRound((100 * champ.wins) / champ.total)
+                }}%)
+            </div>
         </div>
         <div v-if="error">{{ error }}</div>
     </div>

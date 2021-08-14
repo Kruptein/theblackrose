@@ -93,11 +93,11 @@ export default defineComponent({
             <div>{{ stats.totalPlayed - stats.totalWin }}</div>
             <div>{{ stats.seasonPlayed - stats.seasonWin }}</div>
             <div class="stats-label">Win rate</div>
-            <div>{{ decimalRound(100 * (stats.totalWin / stats.totalPlayed), 2) }}%</div>
-            <div>{{ decimalRound(100 * (stats.seasonWin / stats.seasonPlayed), 2) }}%</div>
+            <div>{{ decimalRound(100 * (stats.totalWin / stats.totalPlayed)) }}%</div>
+            <div>{{ decimalRound(100 * (stats.seasonWin / stats.seasonPlayed)) }}%</div>
             <div class="stats-label"># KDA</div>
-            <div>{{ decimalRound((stats.totalKills + stats.totalAssists) / (stats.totalDeaths || 1), 2) }}</div>
-            <div>{{ decimalRound((stats.seasonKills + stats.seasonAssists) / (stats.seasonDeaths || 1), 2) }}</div>
+            <div>{{ decimalRound((stats.totalKills + stats.totalAssists) / (stats.totalDeaths || 1)) }}</div>
+            <div>{{ decimalRound((stats.seasonKills + stats.seasonAssists) / (stats.seasonDeaths || 1)) }}</div>
         </div>
 
         <div id="lastgame" v-if="connection !== undefined">
