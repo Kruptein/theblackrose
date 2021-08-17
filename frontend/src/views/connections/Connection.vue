@@ -1,12 +1,11 @@
-<script lang="ts">
-import { computed, defineComponent, onMounted, reactive } from "vue";
+<script setup lang="ts">
+import { computed, onMounted, reactive } from "vue";
 import { useRoute } from "vue-router";
 
 import { backendUrl, getAuthHeader } from "../../api/utils";
-import { getSummonerIconImage } from "../../common";
 import ConnectionHeader from "../../components/ConnectionHeader.vue";
 import MatchFetcher from "../../components/MatchFetcher.vue";
-import { Summoner } from "../../models/match";
+import type { Summoner } from "../../models/match";
 import { friendlyQueueNames } from "../../models/queue";
 import { connectionStore } from "../../store/connections";
 import { decimalRound } from "../../utils";
@@ -24,53 +23,39 @@ interface QuickStats {
     seasonAssists: number;
 }
 
-// eslint-disable-next-line import/no-unused-modules
-export default defineComponent({
-    components: { ConnectionHeader, MatchFetcher },
-    setup() {
-        const route = useRoute();
+const route = useRoute();
+const routeName = route.params.name as string;
 
-        const queueDefaults = new Set(Object.keys(friendlyQueueNames).map((k) => Number.parseInt(k)));
+const queueDefaults = new Set(Object.keys(friendlyQueueNames).map((k) => Number.parseInt(k)));
 
-        const stats = reactive({
-            totalPlayed: 0,
-            seasonPlayed: 0,
-            totalWin: 0,
-            seasonWin: 0,
-            totalKills: 0,
-            seasonKills: 0,
-            totalDeaths: 0,
-            seasonDeaths: 0,
-            totalAssists: 0,
-            seasonAssists: 0,
-        });
+const stats = reactive({
+    totalPlayed: 0,
+    seasonPlayed: 0,
+    totalWin: 0,
+    seasonWin: 0,
+    totalKills: 0,
+    seasonKills: 0,
+    totalDeaths: 0,
+    seasonDeaths: 0,
+    totalAssists: 0,
+    seasonAssists: 0,
+});
 
-        const connection = computed(() => connectionStore.getConnection(route.params.name as string));
+const connection = computed(() => connectionStore.getConnection(route.params.name as string));
 
-        onMounted(async () => {
-            for (const k of Object.keys(stats)) {
-                stats[k as keyof QuickStats] = 0;
-            }
+onMounted(async () => {
+    for (const k of Object.keys(stats)) {
+        stats[k as keyof QuickStats] = 0;
+    }
 
-            const headers = await getAuthHeader();
-            const response = await fetch(backendUrl(`/api/summoners/${route.params.name}/?stats=true`), headers);
-            const data: { core: Summoner; quickStats?: QuickStats } = JSON.parse(await response.json());
-            connectionStore.addConnections(data.core);
+    const headers = await getAuthHeader();
+    const response = await fetch(backendUrl(`/api/summoners/${route.params.name}/?stats=true`), headers);
+    const data: { core: Summoner; quickStats?: QuickStats } = JSON.parse(await response.json());
+    connectionStore.addConnections(data.core);
 
-            for (const k of Object.keys(stats) as [keyof QuickStats]) {
-                stats[k] = data.quickStats?.[k] ?? 0;
-            }
-        });
-
-        return {
-            decimalRound,
-            getSummonerIconImage,
-
-            connection,
-            stats,
-            queueDefaults,
-        };
-    },
+    for (const k of Object.keys(stats) as [keyof QuickStats]) {
+        stats[k] = data.quickStats?.[k] ?? 0;
+    }
 });
 </script>
 
@@ -103,7 +88,7 @@ export default defineComponent({
         <div id="lastgame" v-if="connection !== undefined">
             <div class="header">Last 3 games</div>
             <Suspense>
-                <MatchFetcher :names="[$route.params.name]" :length="3" :queues="queueDefaults" :showMore="false" />
+                <MatchFetcher :names="[routeName]" :length="3" :queues="[...queueDefaults]" :showMore="false" />
             </Suspense>
         </div>
     </main>

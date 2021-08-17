@@ -1,41 +1,35 @@
-<script lang="ts">
-import { inject, ref, onMounted, Ref, defineComponent } from "vue";
+<script setup lang="ts">
+import { inject, ref, onMounted, Ref } from "vue";
 
 import { backendUrl, getAuthHeader } from "../api/utils";
 import { Notification } from "../models/notifications";
 import { AuthPlugin } from "../plugins/auth0";
 
-export default defineComponent({
-    setup() {
-        const auth = inject<AuthPlugin>("Auth")!;
-        const showNotifications = ref(false);
-        const notifications: Ref<Notification[]> = ref([]);
+const auth = inject<AuthPlugin>("Auth")!;
+const showNotifications = ref(false);
+const notifications: Ref<Notification[]> = ref([]);
 
-        async function getNotifications(): Promise<void> {
-            const headers = await getAuthHeader();
-            const response = await fetch(backendUrl("/api/notifications/"), headers);
-            notifications.value = JSON.parse(await response.json());
-        }
+async function getNotifications(): Promise<void> {
+    const headers = await getAuthHeader();
+    const response = await fetch(backendUrl("/api/notifications/"), headers);
+    notifications.value = JSON.parse(await response.json());
+}
 
-        async function removeNotification(sliceId: number): Promise<void> {
-            const notificationId = notifications.value[sliceId].id;
-            const headers = await getAuthHeader();
-            const response = await fetch(backendUrl(`/api/notifications/${notificationId}/`), {
-                method: "delete",
-                ...headers,
-            });
-            if (response.status === 200) {
-                notifications.value = notifications.value.filter((n) => n.id !== notificationId);
-            }
-        }
+async function removeNotification(sliceId: number): Promise<void> {
+    const notificationId = notifications.value[sliceId].id;
+    const headers = await getAuthHeader();
+    const response = await fetch(backendUrl(`/api/notifications/${notificationId}/`), {
+        method: "delete",
+        ...headers,
+    });
+    if (response.status === 200) {
+        notifications.value = notifications.value.filter((n) => n.id !== notificationId);
+    }
+}
 
-        onMounted(() => {
-            setInterval(getNotifications, 15 * 60 * 1000);
-            getNotifications();
-        });
-
-        return { auth, backendUrl, notifications, removeNotification, showNotifications };
-    },
+onMounted(() => {
+    setInterval(getNotifications, 15 * 60 * 1000);
+    getNotifications();
 });
 </script>
 

@@ -1,4 +1,4 @@
-import { Connection } from "../models/connections";
+import type { Connection } from "../models/connections";
 
 import { backendUrl, getAuthHeader } from "./utils";
 

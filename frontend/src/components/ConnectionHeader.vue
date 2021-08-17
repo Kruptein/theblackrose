@@ -1,5 +1,5 @@
-<script lang="ts">
-import { computed, defineComponent, onMounted } from "vue";
+<script setup lang="ts">
+import { computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 
 import { backendUrl, getAuthHeader } from "../api/utils";
@@ -7,31 +7,26 @@ import { getSummonerIconImage } from "../common";
 import { Summoner } from "../models/match";
 import { connectionStore } from "../store/connections";
 
-export default defineComponent({
-    props: { active: { type: String, required: true }, apiLoad: { type: Boolean, default: true } },
-    setup(props) {
-        const route = useRoute();
+const props = withDefaults(defineProps<{ active: string; apiLoad?: boolean }>(), { apiLoad: true });
 
-        const connection = computed(() => connectionStore.getConnection(route.params.name as string));
+const route = useRoute();
 
-        onMounted(async () => {
-            if (props.apiLoad) {
-                const headers = await getAuthHeader();
+const connection = computed(() => connectionStore.getConnection(route.params.name as string));
 
-                const response = await fetch(backendUrl(`/api/summoners/${route.params.name}/`), headers);
-                const data: { core: Summoner } = JSON.parse(await response.json());
-                connectionStore.addConnections(data.core);
-            }
-        });
+onMounted(async () => {
+    if (props.apiLoad) {
+        const headers = await getAuthHeader();
 
-        async function refresh(): Promise<void> {
-            const headers = await getAuthHeader();
-            await fetch(backendUrl(`/api/connection/${route.params.name}/refresh`), headers);
-        }
-
-        return { getSummonerIconImage, connection, refresh };
-    },
+        const response = await fetch(backendUrl(`/api/summoners/${route.params.name}/`), headers);
+        const data: { core: Summoner } = JSON.parse(await response.json());
+        connectionStore.addConnections(data.core);
+    }
 });
+
+async function refresh(): Promise<void> {
+    const headers = await getAuthHeader();
+    await fetch(backendUrl(`/api/connection/${route.params.name}/refresh`), headers);
+}
 </script>
 
 <template>

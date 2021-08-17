@@ -1,4 +1,4 @@
-import { Match, Participant, Summoner, ParticipantStatsGeneral, ParticipantStatsKills } from "./match";
+import type { Match, Participant, Summoner, ParticipantStatsGeneral, ParticipantStatsKills } from "./match";
 
 export interface MatchFeedFilter {
     names?: string[];

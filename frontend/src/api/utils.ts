@@ -1,4 +1,4 @@
-import { MatchFeedFilter } from "../models/matchfeed";
+import type { MatchFeedFilter } from "../models/matchfeed";
 import { authPlugin } from "../plugins/auth0";
 
 export function backendUrl(path: string): string {
