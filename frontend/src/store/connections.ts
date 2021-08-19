@@ -1,8 +1,9 @@
-import { DeepReadonly, readonly } from "@vue/reactivity";
+import type { DeepReadonly } from "@vue/reactivity";
+import { readonly } from "@vue/reactivity";
 import { reactive } from "vue";
 
-import { Connection } from "../models/connections";
-import { Summoner } from "../models/match";
+import type { Connection } from "../models/connections";
+import type { Summoner } from "../models/match";
 
 class ConnectionStore {
     private connectionInfo: Map<string, Connection & Partial<Summoner>> = reactive(new Map());

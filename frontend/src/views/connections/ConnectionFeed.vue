@@ -1,5 +1,5 @@
-<script lang="ts">
-import { computed, defineComponent, ref } from "vue";
+<script setup lang="ts">
+import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
 
 // import { backendUrl, getAuthHeader } from "../../api/utils";
@@ -9,34 +9,25 @@ import Filter from "../../components/Filter.vue";
 import MatchFetcher from "../../components/MatchFetcher.vue";
 import { friendlyQueueNames } from "../../models/queue";
 
-// eslint-disable-next-line import/no-unused-modules
-export default defineComponent({
-    components: { ConnectionHeader, DefaultHeader, Filter, MatchFetcher },
+const route = useRoute();
 
-    setup() {
-        const route = useRoute();
+const isConnectionFeed = computed(() => route.name === "ConnectionFeed");
 
-        const isConnectionFeed = computed(() => route.name === "ConnectionFeed");
+const names = computed(() => (isConnectionFeed.value ? [route.params.name as string] : []));
 
-        const names = computed(() => (isConnectionFeed.value ? [route.params.name] : []));
+const showFilter = ref(false);
 
-        const showFilter = ref(false);
+const queueDefaults = new Set(Object.keys(friendlyQueueNames).map((k) => Number.parseInt(k)));
+const queueFilter = ref<number[]>([...queueDefaults]);
 
-        const queueDefaults = new Set(Object.keys(friendlyQueueNames).map((k) => Number.parseInt(k)));
-        const queueFilter = ref<number[]>([...queueDefaults]);
+// async function refresh(): Promise<void> {
+//     const headers = await getAuthHeader();
+//     await fetch(backendUrl(`/api/connection/${route.params.name}/refresh`), headers);
+// }
 
-        // async function refresh(): Promise<void> {
-        //     const headers = await getAuthHeader();
-        //     await fetch(backendUrl(`/api/connection/${route.params.name}/refresh`), headers);
-        // }
-
-        function setFilter(data: number[]): void {
-            queueFilter.value = [...data];
-        }
-
-        return { isConnectionFeed, names, showFilter, queueDefaults, queueFilter, setFilter };
-    },
-});
+function setFilter(data: number[]): void {
+    queueFilter.value = [...data];
+}
 </script>
 
 <template>

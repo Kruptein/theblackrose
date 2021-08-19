@@ -20,13 +20,12 @@ module.exports = {
         "@typescript-eslint/no-empty-function": "off",
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
-        "@typescript-eslint/no-unused-vars": [
-            process.env.GITHUB_ACTION === undefined ? 1 : 2,
-            { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
-        ],
+        "@typescript-eslint/no-unused-vars": "off",
         "@typescript-eslint/no-use-before-define": 0,
         "@typescript-eslint/require-await": "error",
         "@typescript-eslint/strict-boolean-expressions": 2,
+        "@typescript-eslint/consistent-type-imports": 2,
+        "@typescript-eslint/consistent-type-imports": 0,
         "prefer-const": [process.env.GITHUB_ACTION === undefined ? 1 : 2],
         "import/no-unused-modules": [process.env.GITHUB_ACTION === undefined ? 0 : 2, { unusedExports: true }],
         "import/order": [

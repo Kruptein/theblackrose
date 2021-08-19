@@ -35,7 +35,7 @@ pub async fn get_winrate_for_champion(
             FROM participants p
             INNER JOIN participant_stats_general ps ON ps.participant_id = p.id
             INNER JOIN summoners s ON s.summoner_id = $1 AND p.summoner_id = s.id
-            INNER JOIN match_references mr ON mr.game_id = p.game_id
+            INNER JOIN match_references mr ON mr.game_id = p.game_id AND mr.summoner_id = s.id
             WHERE champion_id = $2 AND queue = $3",
             summoner_id,
             champion.identifier(),

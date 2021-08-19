@@ -1,54 +1,49 @@
-<script lang="ts">
-import { defineComponent, PropType, ref, watchEffect } from "vue";
+<script setup lang="ts">
+import { ref, watchEffect } from "vue";
 
 import { queueMap, queueMode, queuePickType, queuePlayerSize, queueSeriousness } from "../models/queue";
 
-export default defineComponent({
-    props: { defaults: { type: Object as PropType<Set<number>>, default: new Set([450]) } },
-    emits: ["filter"],
-    setup(props, { emit }) {
-        const selected = ref<Map<string, Set<number>>>(new Map());
-        selected.value.set("map", new Set(bootstrapDefaults(queueMap)));
-        selected.value.set("playerSize", new Set(bootstrapDefaults(queuePlayerSize)));
-        selected.value.set("pickType", new Set(bootstrapDefaults(queuePickType)));
-        selected.value.set("mode", new Set(bootstrapDefaults(queueMode)));
-        selected.value.set("seriousness", new Set(bootstrapDefaults(queueSeriousness)));
+const props = withDefaults(defineProps<{ defaults?: Set<number> }>(), { defaults: () => new Set([450]) });
+const emit = defineEmits(["filter"]);
 
-        let a = false;
+const selected = ref<Map<string, Set<number>>>(new Map());
+selected.value.set("map", new Set(bootstrapDefaults(queueMap)));
+selected.value.set("playerSize", new Set(bootstrapDefaults(queuePlayerSize)));
+selected.value.set("pickType", new Set(bootstrapDefaults(queuePickType)));
+selected.value.set("mode", new Set(bootstrapDefaults(queueMode)));
+selected.value.set("seriousness", new Set(bootstrapDefaults(queueSeriousness)));
 
-        const maps = Object.entries(queueMap);
-        const playerSizes = Object.entries(queuePlayerSize);
-        const pickTypes = Object.entries(queuePickType);
-        const modes = Object.entries(queueMode);
-        const seriousnesss = Object.entries(queueSeriousness);
+let a = false;
 
-        function bootstrapDefaults(map: Record<string, number[]>): number[] {
-            return Object.values(map).reduce(
-                (prev, curr) => (curr.some((x) => props.defaults.has(x)) ? [...prev, ...curr] : prev),
-                [],
-            );
-        }
+const maps = Object.entries(queueMap);
+const playerSizes = Object.entries(queuePlayerSize);
+const pickTypes = Object.entries(queuePickType);
+const modes = Object.entries(queueMode);
+const seriousnesss = Object.entries(queueSeriousness);
 
-        watchEffect(() => {
-            const selectedQueues = [
-                ...[...selected.value.values()].reduce((prev, curr) => new Set([...prev].filter((x) => curr.has(x)))),
-            ];
-            // temporary hack to fix errors
-            if (a) emit("filter", selectedQueues);
-            a = true;
-        });
+function bootstrapDefaults(map: Record<string, number[]>): number[] {
+    return Object.values(map).reduce(
+        (prev, curr) => (curr.some((x) => props.defaults.has(x)) ? [...prev, ...curr] : prev),
+        [],
+    );
+}
 
-        function toggleOptions(target: HTMLInputElement, key: string, ids: number[]): void {
-            if (!target.checked) {
-                for (const id of ids) selected.value.get(key)!.delete(id);
-            } else {
-                for (const id of ids) selected.value.get(key)!.add(id);
-            }
-        }
-
-        return { selected, toggleOptions, maps, modes, pickTypes, playerSizes, seriousnesss };
-    },
+watchEffect(() => {
+    const selectedQueues = [
+        ...[...selected.value.values()].reduce((prev, curr) => new Set([...prev].filter((x) => curr.has(x)))),
+    ];
+    // temporary hack to fix errors
+    if (a) emit("filter", selectedQueues);
+    a = true;
 });
+
+function toggleOptions(target: HTMLInputElement, key: string, ids: number[]): void {
+    if (!target.checked) {
+        for (const id of ids) selected.value.get(key)!.delete(id);
+    } else {
+        for (const id of ids) selected.value.get(key)!.add(id);
+    }
+}
 </script>
 
 <template>

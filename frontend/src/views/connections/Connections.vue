@@ -1,32 +1,24 @@
-<script lang="ts">
-import { computed, defineComponent, onMounted, ref } from "vue";
+<script setup lang="ts">
+import { computed, onMounted, ref } from "vue";
 
 import { backendUrl, getAuthHeader } from "../../api/utils";
 import { getSummonerIconImage } from "../../common";
-import { Connection } from "../../models/connections";
+import type { Connection } from "../../models/connections";
 import { connectionStore } from "../../store/connections";
 import { alphSort } from "../../utils";
 
-// eslint-disable-next-line import/no-unused-modules
-export default defineComponent({
-    name: "Connections",
-    setup() {
-        const loading = ref(true);
+const loading = ref(true);
 
-        const connections = computed(() =>
-            [...connectionStore.getConnections().values()].sort((a, b) => alphSort(a.name, b.name)),
-        );
+const connections = computed(() =>
+    [...connectionStore.getConnections().values()].sort((a, b) => alphSort(a.name, b.name)),
+);
 
-        onMounted(async () => {
-            const headers = await getAuthHeader();
-            const response = await fetch(backendUrl("/api/connections/"), headers);
-            const data: Connection[] = JSON.parse(await response.json());
-            connectionStore.addConnections(...data);
-            loading.value = false;
-        });
-
-        return { connections, getSummonerIconImage, loading };
-    },
+onMounted(async () => {
+    const headers = await getAuthHeader();
+    const response = await fetch(backendUrl("/api/connections/"), headers);
+    const data: Connection[] = JSON.parse(await response.json());
+    connectionStore.addConnections(...data);
+    loading.value = false;
 });
 </script>
 

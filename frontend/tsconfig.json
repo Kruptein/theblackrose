@@ -10,12 +10,10 @@
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
         "sourceMap": true,
-        "baseUrl": ".",
-        "paths": {
-            "@/*": ["src/*"]
-        },
-        "lib": ["esnext", "dom", "dom.iterable", "scripthost"]
+        "noUnusedLocals": true,
+        "lib": ["esnext", "dom", "dom.iterable", "scripthost"],
+        "types": ["vite/client"]
     },
-    "include": ["src/**/*.ts", "src/**/*.vue", "tests/**/*.ts"],
+    "include": ["src/**/*.ts", "src/**/*.vue"],
     "exclude": ["node_modules"]
 }
