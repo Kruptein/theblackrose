@@ -1,81 +1,64 @@
-<script lang="ts">
-import { defineComponent, PropType, ref, watch } from "vue";
+<script setup lang="ts">
+import { ref, watch } from "vue";
 
 import { getChampionImage, getItemImage, getSummonerImage } from "../ddragon";
-import { ParticipantStatsKills } from "../models/match";
-import { MatchFeedElement } from "../models/matchfeed";
+import type { ParticipantStatsKills } from "../models/match";
+import type { MatchFeedElement } from "../models/matchfeed";
 import { getQueueFromId } from "../models/queue";
 import { decimalRound } from "../utils";
 
-export default defineComponent({
-    name: "MatchList",
-    props: {
-        matchData: Object as PropType<MatchFeedElement[]>,
-        visibleNames: Object as PropType<string[]>,
+const props = defineProps<{
+    matchData?: MatchFeedElement[];
+    visibleNames?: string[];
+}>();
+
+const matches = ref<MatchFeedElement[]>(props.matchData ?? []);
+const connections = ref<string[]>(props.visibleNames ?? []);
+
+watch(
+    () => props.matchData,
+    (matchData) => {
+        matches.value = matchData ?? [];
     },
-    setup(props) {
-        const matches = ref<MatchFeedElement[]>(props.matchData ?? []);
-        const connections = ref<string[]>(props.visibleNames ?? []);
+);
 
-        watch(
-            () => props.matchData,
-            (matchData) => {
-                matches.value = matchData ?? [];
-            },
-        );
+const getKda = (stats: ParticipantStatsKills): number => {
+    return decimalRound((stats.kills + stats.assists) / Math.max(stats.deaths, 1));
+};
 
-        const getKda = (stats: ParticipantStatsKills): number => {
-            return decimalRound((stats.kills + stats.assists) / Math.max(stats.deaths, 1));
-        };
+const getAbsoluteTime = (timestamp: number): string => {
+    const date = new Date(timestamp);
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+};
 
-        const getAbsoluteTime = (timestamp: number): string => {
-            const date = new Date(timestamp);
-            return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-        };
+const getRelativeTime = (timestamp: number): string => {
+    const timeDelta = +new Date() - +new Date(timestamp);
+    const dataMap: [number, string][] = [
+        [365 * 24 * 60 * 60 * 1000, "year"],
+        [30 * 24 * 60 * 60 * 1000, "month"],
+        [7 * 24 * 60 * 60 * 1000, "week"],
+        [24 * 60 * 60 * 1000, "day"],
+        [60 * 60 * 1000, "hour"],
+        [60 * 1000, "minute"],
+        [1000, "second"],
+    ];
+    for (const [period, name] of dataMap) {
+        if (timeDelta >= period) {
+            const times = Math.round(timeDelta / period);
+            return `${times} ${name}${times > 1 ? "s" : ""} ago`;
+        }
+    }
+    return "now";
+};
 
-        const getRelativeTime = (timestamp: number): string => {
-            const timeDelta = +new Date() - +new Date(timestamp);
-            const dataMap: [number, string][] = [
-                [365 * 24 * 60 * 60 * 1000, "year"],
-                [30 * 24 * 60 * 60 * 1000, "month"],
-                [7 * 24 * 60 * 60 * 1000, "week"],
-                [24 * 60 * 60 * 1000, "day"],
-                [60 * 60 * 1000, "hour"],
-                [60 * 1000, "minute"],
-                [1000, "second"],
-            ];
-            for (const [period, name] of dataMap) {
-                if (timeDelta >= period) {
-                    const times = Math.round(timeDelta / period);
-                    return `${times} ${name}${times > 1 ? "s" : ""} ago`;
-                }
-            }
-            return "now";
-        };
-
-        const toggleMatch = (event: { target: HTMLDivElement }): void => {
-            if (event.target.classList.contains("expand-match")) {
-                event.target.classList.remove("expand-match");
-            } else {
-                event.target.classList.add("expand-match");
-            }
-        };
-
-        return {
-            connections,
-            decimalRound,
-            getChampionImage,
-            getItemImage,
-            getKda,
-            getSummonerImage,
-            getAbsoluteTime,
-            getRelativeTime,
-            getQueueFromId,
-            matches,
-            toggleMatch,
-        };
-    },
-});
+const toggleMatch = (event: Event): void => {
+    const target = event.target as HTMLDivElement;
+    if (target.classList.contains("expand-match")) {
+        target.classList.remove("expand-match");
+    } else {
+        target.classList.add("expand-match");
+    }
+};
 </script>
 
 <template>

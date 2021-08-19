@@ -1,35 +1,27 @@
-<script lang="ts">
-import { defineComponent, ref } from "vue";
+<script setup lang="ts">
+import { ref } from "vue";
 
 import { backendUrl, getAuthHeader } from "../../api/utils";
 
-// eslint-disable-next-line import/no-unused-modules
-export default defineComponent({
-    name: "AddConnections",
-    setup() {
-        const summoner = ref("");
+const summoner = ref("");
 
-        const message = ref("We just need the name of the summoner you want to inquire.");
+const message = ref("We just need the name of the summoner you want to inquire.");
 
-        async function onSubmit(): Promise<void> {
-            message.value = "Submitting to server";
-            const options: { method?: string; headers: { Authorization: string } } = await getAuthHeader();
-            options.method = "POST";
-            const data = await fetch(backendUrl(`/api/connections/${summoner.value}/`), options);
-            if (data.status === 201) {
-                message.value = "Successfully added connection. Matches are being processed, this can take some time.";
-            } else if (data.status === 404) {
-                message.value = "Given username was not found!";
-            } else if (data.status === 409) {
-                message.value = "Given username is already a connection!";
-            } else {
-                message.value = "Something went wrong.";
-            }
-        }
-
-        return { onSubmit, message, summoner };
-    },
-});
+async function onSubmit(): Promise<void> {
+    message.value = "Submitting to server";
+    const options: { method?: string; headers: { Authorization: string } } = await getAuthHeader();
+    options.method = "POST";
+    const data = await fetch(backendUrl(`/api/connections/${summoner.value}/`), options);
+    if (data.status === 201) {
+        message.value = "Successfully added connection. Matches are being processed, this can take some time.";
+    } else if (data.status === 404) {
+        message.value = "Given username was not found!";
+    } else if (data.status === 409) {
+        message.value = "Given username is already a connection!";
+    } else {
+        message.value = "Something went wrong.";
+    }
+}
 </script>
 
 <template>

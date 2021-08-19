@@ -1,5 +1,5 @@
 import { backendUrl } from "./api/utils";
-import { ChampionInfo } from "./models/champion";
+import type { ChampionInfo } from "./models/champion";
 import { getSummonerFromId } from "./models/spells";
 import { patches } from "./state";
 import { compareVersions } from "./utils";
@@ -42,14 +42,14 @@ function ddragonUrl(url: string, gameVersion?: string): string {
     return backendUrl(`/ddragon/${patch}${url}`);
 }
 
-export function getChampionImage(championId: string, gameVersion: string): string {
+export function getChampionImage(championId: string, gameVersion?: string): string {
     return ddragonUrl(`/img/champion/${championId}.png`, gameVersion);
 }
 
-export function getItemImage(item: number, gameVersion: string): string {
+export function getItemImage(item: number, gameVersion?: string): string {
     return ddragonUrl(`/img/item/${item}.png`, gameVersion);
 }
 
-export function getSummonerImage(spell: number, gameVersion: string): string {
+export function getSummonerImage(spell: number, gameVersion?: string): string {
     return ddragonUrl(`/img/spell/${getSummonerFromId(spell)}.png`, gameVersion);
 }

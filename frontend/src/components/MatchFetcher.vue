@@ -1,69 +1,65 @@
-<script lang="ts">
-import { defineComponent, PropType, ref, watchEffect } from "vue";
+<script setup lang="ts">
+import { ref, watchEffect } from "vue";
 
 import { fetchConnections } from "../api/matchfeed";
 import { fetchWithQuery } from "../api/utils";
 import MatchList from "../components/MatchList.vue";
-import { MatchFeedElement, MatchFeedFilter } from "../models/matchfeed";
+import type { MatchFeedElement, MatchFeedFilter } from "../models/matchfeed";
 
-export default defineComponent({
-    name: "MatchFetcher",
-    components: { MatchList },
-    props: {
-        names: { type: Array as PropType<string[]>, default: () => [] },
-        queues: { type: Array as PropType<number[]>, default: () => [] },
-        length: { type: Number },
-        showMore: { type: Boolean, default: true },
+const props = withDefaults(
+    defineProps<{
+        names?: string[];
+        queues?: number[];
+        length?: number;
+        showMore?: boolean;
+    }>(),
+    {
+        names: () => [],
+        queues: () => [],
+        showMore: true,
     },
-    emits: ["update:filter"],
-    async setup(props) {
-        const matches = ref<MatchFeedElement[]>([]);
-        const connections = ref<string[]>([]);
+);
+defineEmits(["update:filter"]);
 
-        const filter: Partial<MatchFeedFilter> = {};
+const matches = ref<MatchFeedElement[]>([]);
+const connections = ref<string[]>([]);
 
-        let resolveFunc: () => void;
+const filter: Partial<MatchFeedFilter> = {};
 
-        watchEffect(async () => {
-            if (props.queues?.length === 0) return;
+let resolveFunc: () => void;
 
-            const [matchData, connectionData] = await Promise.all([
-                fetchWithQuery<MatchFeedElement[]>("/api/matches/", {
-                    names: props.names,
-                    queues: props.queues,
-                    length: props.length,
-                }),
-                fetchConnections(),
-            ]);
+watchEffect(async () => {
+    if (props.queues?.length === 0) return;
 
-            matches.value = matchData;
-            connections.value = connectionData;
-            filter.before = matches.value[matches.value.length - 1].matchInfo.gameCreation;
+    const [matchData, connectionData] = await Promise.all([
+        fetchWithQuery<MatchFeedElement[]>("/api/matches/", {
+            names: props.names,
+            queues: props.queues,
+            length: props.length,
+        }),
+        fetchConnections(),
+    ]);
 
-            resolveFunc();
-        });
+    matches.value = matchData;
+    connections.value = connectionData;
+    filter.before = matches.value[matches.value.length - 1].matchInfo.gameCreation;
 
-        await new Promise<void>((res) => (resolveFunc = res));
-
-        const loadMoreData = async (): Promise<void> => {
-            matches.value.push(
-                ...(await fetchWithQuery<MatchFeedElement[]>("/api/matches/", {
-                    names: props.names,
-                    queues: props.queues,
-                    length: props.length,
-                    ...filter,
-                })),
-            );
-            filter.before = matches.value[matches.value.length - 1].matchInfo.gameCreation;
-        };
-
-        return {
-            connections,
-            loadMoreData,
-            matches,
-        };
-    },
+    resolveFunc();
 });
+
+await new Promise<void>((res) => (resolveFunc = res));
+
+const loadMoreData = async (): Promise<void> => {
+    matches.value.push(
+        ...(await fetchWithQuery<MatchFeedElement[]>("/api/matches/", {
+            names: props.names,
+            queues: props.queues,
+            length: props.length,
+            ...filter,
+        })),
+    );
+    filter.before = matches.value[matches.value.length - 1].matchInfo.gameCreation;
+};
 </script>
 
 <template>

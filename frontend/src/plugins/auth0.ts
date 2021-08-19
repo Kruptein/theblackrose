@@ -1,6 +1,8 @@
-import createAuth0Client, { Auth0Client, IdToken, RedirectLoginOptions } from "@auth0/auth0-spa-js";
-import { App, computed, reactive, watchEffect } from "vue";
-import { NavigationGuardNext, RouteLocation } from "vue-router";
+import type { Auth0Client, IdToken, RedirectLoginOptions } from "@auth0/auth0-spa-js";
+import createAuth0Client from "@auth0/auth0-spa-js";
+import type { App } from "vue";
+import { computed, reactive, watchEffect } from "vue";
+import type { NavigationGuardNext, RouteLocation } from "vue-router";
 
 let client: Auth0Client;
 const state = reactive({

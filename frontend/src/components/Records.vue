@@ -1,23 +1,13 @@
-<script lang="ts">
-import { defineComponent, PropType } from "vue";
-
+<script setup lang="ts">
 import MatchList from "../components/MatchList.vue";
-import { MatchFeedElement } from "../models/matchfeed";
-import { getQueueFromId } from "../models/queue";
-import { Record, RecordType } from "../models/records";
+import type { MatchFeedElement } from "../models/matchfeed";
+import type { Record } from "../models/records";
+import { RecordType } from "../models/records";
 
-// eslint-disable-next-line import/no-unused-modules
-export default defineComponent({
-    name: "Records",
-    components: { MatchList },
-    props: {
-        records: { type: Object as PropType<Record[]>, required: true },
-        matches: { type: Object as PropType<MatchFeedElement[]>, required: true },
-    },
-    setup() {
-        return { getQueueFromId, RecordType };
-    },
-});
+defineProps<{
+    records: Record[];
+    matches: MatchFeedElement[];
+}>();
 </script>
 
 <template>

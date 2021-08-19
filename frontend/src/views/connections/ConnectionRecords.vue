@@ -1,5 +1,5 @@
-<script lang="ts">
-import { computed, defineComponent, ref, watchEffect } from "vue";
+<script setup lang="ts">
+import { computed, ref, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 
 import { fetchWithQuery } from "../../api/utils";
@@ -7,60 +7,41 @@ import ConnectionHeader from "../../components/ConnectionHeader.vue";
 import DefaultHeader from "../../components/DefaultHeader.vue";
 import Filter from "../../components/Filter.vue";
 import Records from "../../components/Records.vue";
-import { MatchFeedElement } from "../../models/matchfeed";
-import { getQueueFromId, queueMode, queueSeriousness } from "../../models/queue";
-import { RecordType } from "../../models/records";
+import type { MatchFeedElement } from "../../models/matchfeed";
+import { queueMode, queueSeriousness } from "../../models/queue";
 
 type Record = { id: number; recordType: number; value: number; name: string; queueId: number; gameId: number };
 
-// eslint-disable-next-line import/no-unused-modules
-export default defineComponent({
-    components: { ConnectionHeader, DefaultHeader, Filter, Records },
-    setup() {
-        const route = useRoute();
+const route = useRoute();
 
-        const loading = ref(true);
-        const records = ref<Record[]>([]);
-        const matches = ref<MatchFeedElement[]>([]);
+const loading = ref(true);
+const records = ref<Record[]>([]);
+const matches = ref<MatchFeedElement[]>([]);
 
-        const showFilter = ref(false);
+const showFilter = ref(false);
 
-        const isConnectionRecords = computed(() => route.name === "ConnectionRecords");
+const isConnectionRecords = computed(() => route.name === "ConnectionRecords");
 
-        const defaultSelectedQueues = new Set([
-            ...queueMode.Normal,
-            ...queueMode["Ranked Solo"],
-            ...queueMode["Ranked Flex"],
-            ...queueMode["Ranked Team"],
-            ...queueMode.Clash,
-            ...queueMode.ARAM,
-        ]);
-        for (const queue of queueSeriousness.Bots) defaultSelectedQueues.delete(queue);
+const defaultSelectedQueues = new Set([
+    ...queueMode.Normal,
+    ...queueMode["Ranked Solo"],
+    ...queueMode["Ranked Flex"],
+    ...queueMode["Ranked Team"],
+    ...queueMode.Clash,
+    ...queueMode.ARAM,
+]);
+for (const queue of queueSeriousness.Bots) defaultSelectedQueues.delete(queue);
 
-        const queueFilter = ref<number[]>([...defaultSelectedQueues]);
+const queueFilter = ref<number[]>([...defaultSelectedQueues]);
 
-        watchEffect(async () => {
-            const [recordsData, matchesData] = await fetchWithQuery<[Record[], MatchFeedElement[]]>("/api/records/", {
-                names: isConnectionRecords.value ? [route.params.name as string] : undefined,
-                queues: queueFilter.value,
-            });
-            records.value = recordsData;
-            matches.value = matchesData;
-            loading.value = false;
-        });
-
-        return {
-            isConnectionRecords,
-            getQueueFromId,
-            loading,
-            matches,
-            records,
-            RecordType,
-            showFilter,
-            defaultSelectedQueues,
-            queueFilter,
-        };
-    },
+watchEffect(async () => {
+    const [recordsData, matchesData] = await fetchWithQuery<[Record[], MatchFeedElement[]]>("/api/records/", {
+        names: isConnectionRecords.value ? [route.params.name as string] : undefined,
+        queues: queueFilter.value,
+    });
+    records.value = recordsData;
+    matches.value = matchesData;
+    loading.value = false;
 });
 </script>
 
