@@ -49,6 +49,7 @@ onMounted(() => {
                             <img id="feather" :src="backendUrl('/ddragon/feather.png')" />
                         </li>
                         <li><router-link to="/feed">Recent games</router-link></li>
+                        <li><router-link to="/stats">Stats</router-link></li>
                         <li><router-link to="/records">Records</router-link></li>
                         <li><router-link to="/connections">Network</router-link></li>
                         <li @click="auth.logout" :class="{ showNotifications }">

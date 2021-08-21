@@ -6,21 +6,33 @@ import { compareVersions } from "./utils";
 
 let championDataLoaded = false;
 let championData: Record<number, ChampionInfo> = {};
+let nameMap: Record<string, number> = {};
 
 export async function loadChampionData(): Promise<void> {
     if (!championDataLoaded) {
         const response = await fetch(ddragonUrl("/data/en_US/champion.json"));
         const json = (await response.json()) as { data: Record<string, ChampionInfo> };
         championData = Object.fromEntries(Object.values(json.data).map((v) => [Number.parseInt(v.key), v]));
+        nameMap = Object.fromEntries(Object.values(json.data).map((v) => [v.name, Number.parseInt(v.key)]));
         championDataLoaded = true;
     }
+}
+
+export function getChampionNames(): string[] {
+    return Object.keys(nameMap);
+}
+
+export function getChampionId(name: string): number {
+    if (!championDataLoaded) {
+        throw new Error("Champion info was not loaded.");
+    }
+    return nameMap[name];
 }
 
 export function getChampionInfo(championId: number): ChampionInfo {
     if (!championDataLoaded) {
         throw new Error("Champion info was not loaded.");
     }
-    console.log(championData);
     return championData[championId];
 }
 

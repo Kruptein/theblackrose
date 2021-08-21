@@ -20,6 +20,12 @@ const routes: Array<RouteRecordRaw> = [
         component: ConnectionFeed,
     },
     {
+        path: "/stats",
+        name: "Stats",
+        beforeEnter: auth0.routeGuard,
+        component: () => import("../views/stats/Stats.vue"),
+    },
+    {
         path: "/records",
         name: "Records",
         beforeEnter: auth0.routeGuard,

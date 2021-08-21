@@ -2,7 +2,7 @@ use actix_web::{get, post, web, HttpResponse, Responder};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 
 use crate::{
-    actor::{ConnectionUpdateMessage, SummonerUpdateMessage},
+    actors::gamefetcher::{ConnectionUpdateMessage, SummonerUpdateMessage},
     auth::helpers::get_user_from_cache,
     handlers::connections as h,
     handlers::users::get_user_by_id,

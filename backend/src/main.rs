@@ -1,4 +1,4 @@
-mod actor;
+mod actors;
 mod auth;
 mod db;
 mod errors;
@@ -22,10 +22,11 @@ use actix_web::{
     App, HttpServer,
 };
 use actix_web_httpauth::middleware::HttpAuthentication;
-use actor::GameFetchActor;
+use actors::gamefetcher::GameFetchActor;
 use auth::validation::validator;
 use db::establish_pool;
 use dotenv::dotenv;
+use handlers::stats::ChampionWinrate;
 use riven::RiotApi;
 use routes::{
     connections::{add_connection, get_connections, refresh_connection},
@@ -36,13 +37,18 @@ use routes::{
 use sqlx::PgPool;
 use tokio::sync::{Mutex, RwLock};
 
-use crate::routes::{live::get_live_info, summoners::get_summoner};
+use crate::{
+    actors::statscollector::StatsCollectorActor,
+    routes::{live::get_live_info, stats::get_winrates, summoners::get_summoner},
+};
 
 pub struct AppState {
     db_conn: PgPool,
     riot_api: Arc<RiotApi>,
     tokens: RwLock<HashMap<String, i32>>,
     update_task: Addr<GameFetchActor>,
+    stats_collector: Addr<StatsCollectorActor>,
+    winrate_map: Arc<RwLock<HashMap<String, HashMap<String, HashMap<i32, ChampionWinrate>>>>>,
 }
 
 fn main() -> std::io::Result<()> {
@@ -61,18 +67,28 @@ fn main() -> std::io::Result<()> {
 
         let riot_api = Arc::new(rito::create_riot_api());
 
-        let actor = GameFetchActor::create(|_| GameFetchActor {
+        let game_fetcher = GameFetchActor::create(|_| GameFetchActor {
             db: pool.clone(),
             riot_api: riot_api.clone(),
             game_processing_lock: Arc::new(Mutex::new(HashSet::new())),
         })
         .clone();
 
+        let winrate_map = Arc::new(RwLock::new(HashMap::new()));
+
+        let stats_collector = StatsCollectorActor::create(|_| StatsCollectorActor {
+            db: pool.clone(),
+            modified_summoners: Arc::new(Mutex::new(HashSet::new())),
+            winrate_map: winrate_map.clone(),
+        });
+
         let web_data = web::Data::new(AppState {
             riot_api: riot_api.clone(),
             db_conn: pool.clone(),
             tokens: RwLock::new(HashMap::new()),
-            update_task: actor.clone(),
+            update_task: game_fetcher.clone(),
+            stats_collector,
+            winrate_map,
         });
 
         println!("Started the black rose backend service!");
@@ -99,7 +115,8 @@ fn main() -> std::io::Result<()> {
                         .service(get_notifications)
                         .service(remove_notification)
                         .service(refresh_connection)
-                        .service(get_live_info),
+                        .service(get_live_info)
+                        .service(get_winrates),
                 )
         })
         .bind("0.0.0.0:9000")

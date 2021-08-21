@@ -5,6 +5,12 @@ export function backendUrl(path: string): string {
     return `${import.meta.env.VITE_BACKEND_LOCATION}${path}`;
 }
 
+(window as any).bu = async (url: string) => {
+    const headers = await getAuthHeader();
+    const response = await fetch(backendUrl(url), headers);
+    return JSON.parse(await response.json());
+};
+
 export async function getAuthHeader(): Promise<{ headers: { Authorization: string } }> {
     const token: string = await authPlugin.getTokenSilently();
     return { headers: { Authorization: `Bearer ${token}` } };
