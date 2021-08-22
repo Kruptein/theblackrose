@@ -5,6 +5,8 @@ import { getAuthHeader, backendUrl } from "../../api/utils";
 import { getChampionId, getChampionInfo, getChampionNames } from "../../ddragon";
 import { decimalRound } from "../../utils";
 
+const mingames = ref(0);
+
 type Winrate = Record<string, Record<string, Record<number, { wins: number; total: number }>>>;
 
 const winrates = ref<Winrate>({});
@@ -16,24 +18,25 @@ onMounted(async () => {
     const response = await fetch(backendUrl(`/api/stats/winrates/`), headers);
     winrates.value = JSON.parse(await response.json());
 });
-
-// function getWinrate(data: Record<number, { wins: number; total: number }>): number {
-
-// }
 </script>
 
 <template>
     <div id="welcome">
         <img src="https://vignette3.wikia.nocookie.net/leagueoflegends/images/6/6c/Black_Rose.png" />
 
-        <h1>Hello</h1>
+        <h1>Winrates</h1>
+        <div>Minimum games played filter:</div>
+        <input type="number" v-model="mingames" />
         <div v-for="champion in names" class="champion">
             <h2>{{ champion }}</h2>
             <div class="line"></div>
             <div
                 v-for="(data, summoner) in winrates[getChampionInfo(getChampionId(champion)).id]"
                 class="summoner"
-                :style="{ left: `${decimalRound((500 * data[450].wins) / data[450].total)}px` }"
+                :style="{
+                    left: `${decimalRound((500 * data[450].wins) / data[450].total)}px`,
+                    display: data[450].total < mingames ? 'none' : '',
+                }"
                 :title="`${summoner} [${data[450].wins}/${data[450].total}]`"
             >
                 {{ summoner[0] }}
