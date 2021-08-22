@@ -15,6 +15,7 @@ export async function loadChampionData(): Promise<void> {
         championData = Object.fromEntries(Object.values(json.data).map((v) => [Number.parseInt(v.key), v]));
         nameMap = Object.fromEntries(Object.values(json.data).map((v) => [v.name, Number.parseInt(v.key)]));
         championDataLoaded = true;
+        (window as any).championData = championData;
     }
 }
 

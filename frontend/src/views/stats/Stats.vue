@@ -2,7 +2,7 @@
 import { onMounted, ref } from "vue";
 
 import { getAuthHeader, backendUrl } from "../../api/utils";
-import { getChampionNames } from "../../ddragon";
+import { getChampionId, getChampionInfo, getChampionNames } from "../../ddragon";
 import { decimalRound } from "../../utils";
 
 type Winrate = Record<string, Record<string, Record<number, { wins: number; total: number }>>>;
@@ -31,7 +31,7 @@ onMounted(async () => {
             <h2>{{ champion }}</h2>
             <div class="line"></div>
             <div
-                v-for="(data, summoner) in winrates[champion]"
+                v-for="(data, summoner) in winrates[getChampionInfo(getChampionId(champion)).id]"
                 class="summoner"
                 :style="{ left: `${decimalRound((500 * data[450].wins) / data[450].total)}px` }"
                 :title="`${summoner} [${data[450].wins}/${data[450].total}]`"
