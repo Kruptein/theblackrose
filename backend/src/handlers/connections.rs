@@ -62,6 +62,16 @@ pub async fn get_connection_short_info(
         .await
 }
 
+pub async fn get_connections(conn: &PgPool, user_id: i32) -> Result<Vec<Summoner>, Error> {
+    sqlx::query_as!(
+        Summoner,
+        "SELECT s.* FROM connections c INNER JOIN summoners s ON c.summoner_id = s.id WHERE c.user_id = $1",
+        user_id
+    )
+    .fetch_all(conn)
+    .await
+}
+
 pub async fn get_connection_matches(
     conn: &PgPool,
     user: User,

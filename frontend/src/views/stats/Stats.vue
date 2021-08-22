@@ -37,7 +37,6 @@ onMounted(async () => {
                 :title="`${summoner} [${data[450].wins}/${data[450].total}]`"
             >
                 {{ summoner[0] }}
-                <!-- {{ summoner }}: {{ decimalRound((100 * data[450].wins) / data[450].total) }}% -->
             </div>
         </div>
     </div>
