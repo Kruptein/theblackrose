@@ -31,6 +31,7 @@ onMounted(async () => {
         <div v-for="champion in names" class="champion">
             <img :src="`${getChampionImage(getChampionInfo(getChampionId(champion)).id)}`" />
             <div class="data">
+                <div class="name">{{ champion }}</div>
                 <div class="line"></div>
                 <div
                     v-for="(data, summoner) in winrates[getChampionInfo(getChampionId(champion)).id]"
@@ -65,6 +66,12 @@ onMounted(async () => {
         position: relative;
     }
 }
+
+.name {
+    position: absolute;
+    top: -15px;
+}
+
 .line {
     height: 15px;
     width: 500px;
