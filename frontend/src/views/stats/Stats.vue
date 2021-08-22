@@ -2,7 +2,7 @@
 import { onMounted, ref } from "vue";
 
 import { getAuthHeader, backendUrl } from "../../api/utils";
-import { getChampionId, getChampionInfo, getChampionNames } from "../../ddragon";
+import { getChampionId, getChampionImage, getChampionInfo, getChampionNames } from "../../ddragon";
 import { decimalRound } from "../../utils";
 
 const mingames = ref(0);
@@ -27,19 +27,22 @@ onMounted(async () => {
         <h1>Winrates</h1>
         <div>Minimum games played filter:</div>
         <input type="number" v-model="mingames" />
+        <div style="margin-top: 50px"></div>
         <div v-for="champion in names" class="champion">
-            <h2>{{ champion }}</h2>
-            <div class="line"></div>
-            <div
-                v-for="(data, summoner) in winrates[getChampionInfo(getChampionId(champion)).id]"
-                class="summoner"
-                :style="{
-                    left: `${decimalRound((500 * data[450].wins) / data[450].total)}px`,
-                    display: data[450].total < mingames ? 'none' : '',
-                }"
-                :title="`${summoner} [${data[450].wins}/${data[450].total}]`"
-            >
-                {{ summoner[0] }}
+            <img :src="`${getChampionImage(getChampionInfo(getChampionId(champion)).id)}`" />
+            <div class="data">
+                <div class="line"></div>
+                <div
+                    v-for="(data, summoner) in winrates[getChampionInfo(getChampionId(champion)).id]"
+                    class="summoner"
+                    :style="{
+                        left: `${decimalRound((500 * data[450].wins) / data[450].total)}px`,
+                        display: data[450].total < mingames ? 'none' : '',
+                    }"
+                    :title="`${summoner} [${data[450].wins}/${data[450].total}]`"
+                >
+                    {{ summoner[0] }}
+                </div>
             </div>
         </div>
     </div>
@@ -47,7 +50,20 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
 .champion {
-    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 25px;
+
+    img {
+        width: 50px;
+        height: 50px;
+        margin-right: 25px;
+    }
+
+    .data {
+        position: relative;
+    }
 }
 .line {
     height: 15px;
