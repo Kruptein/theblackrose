@@ -84,5 +84,4 @@ async fn update_connections(
             }
         }
     }
-    println!("{:?}", collection);
 }

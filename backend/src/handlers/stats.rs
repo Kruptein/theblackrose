@@ -9,11 +9,8 @@ pub struct ChampionWinrate {
 }
 
 impl ChampionWinrate {
-    fn new(win: bool) -> ChampionWinrate {
-        ChampionWinrate {
-            wins: if win { 1 } else { 0 },
-            total: 1,
-        }
+    fn new() -> ChampionWinrate {
+        ChampionWinrate { wins: 0, total: 0 }
     }
 
     fn add(&mut self, win: bool) {
@@ -106,7 +103,7 @@ pub async fn get_all_winrates(
         let summoner_data = champion_data.entry(row.name).or_insert(HashMap::new());
         let queue_data = summoner_data
             .entry(row.queue)
-            .or_insert(ChampionWinrate::new(row.win));
+            .or_insert(ChampionWinrate::new());
         queue_data.add(row.win);
     }
 
