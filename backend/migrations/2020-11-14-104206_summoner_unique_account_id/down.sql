@@ -1,1 +1,0 @@
-ALTER TABLE summoners DROP CONSTRAINT summoners_account_id_key

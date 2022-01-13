@@ -1,1 +1,0 @@
-ALTER TABLE match_references ADD COLUMN season INT NOT NULL DEFAULT 13; -- ya basic

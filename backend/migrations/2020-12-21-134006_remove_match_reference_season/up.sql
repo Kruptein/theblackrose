@@ -1,1 +1,0 @@
-ALTER TABLE match_references DROP COLUMN season;

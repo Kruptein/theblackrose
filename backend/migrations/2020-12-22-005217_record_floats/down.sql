@@ -1,1 +1,0 @@
-ALTER TABLE records ALTER COLUMN value TYPE INT;
