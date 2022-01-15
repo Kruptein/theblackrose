@@ -50,7 +50,7 @@ onMounted(async () => {
 
     const headers = await getAuthHeader();
     const response = await fetch(backendUrl(`/api/summoners/${route.params.name}/?stats=true`), headers);
-    const data: { core: Summoner; quickStats?: QuickStats } = JSON.parse(await response.json());
+    const data: { core: Summoner; quickStats?: QuickStats } = await response.json();
     connectionStore.addConnections(data.core);
 
     for (const k of Object.keys(stats) as [keyof QuickStats]) {

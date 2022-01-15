@@ -41,10 +41,7 @@ pub async fn get_summoner(
                 core: summoner,
                 quick_stats,
             };
-            match serde_json::to_string(&info) {
-                Ok(data) => HttpResponse::Ok().json(data),
-                Err(_) => HttpResponse::InternalServerError().finish(),
-            }
+            HttpResponse::Ok().json(info)
         }
         None => HttpResponse::NotFound().finish(),
     }

@@ -55,8 +55,9 @@ function ddragonUrl(url: string, gameVersion?: string): string {
     return backendUrl(`/ddragon/${patch}${url}`);
 }
 
-export function getChampionImage(championId: string, gameVersion?: string): string {
-    return ddragonUrl(`/img/champion/${championId}.png`, gameVersion);
+export function getChampionImage(championId: number, gameVersion?: string): string {
+    const identifier = getChampionInfo(championId).id;
+    return ddragonUrl(`/img/champion/${identifier}.png`, gameVersion);
 }
 
 export function getItemImage(item: number, gameVersion?: string): string {

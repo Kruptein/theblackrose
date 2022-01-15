@@ -3,7 +3,7 @@
 pub struct Summoner {
     #[serde(skip)]
     pub id: i32,
-    pub account_id: String,
+    pub account_id: Option<String>,
     pub profile_icon_id: i32,
     pub revision_date: Option<i64>,
     pub name: String,
@@ -58,7 +58,9 @@ where
     fn size_hint(&self) -> ::std::primitive::usize {
         10usize * (4 + 4)
             + <i32 as ::sqlx::encode::Encode<::sqlx::Postgres>>::size_hint(&self.id)
-            + <String as ::sqlx::encode::Encode<::sqlx::Postgres>>::size_hint(&self.account_id)
+            + <Option<String> as ::sqlx::encode::Encode<::sqlx::Postgres>>::size_hint(
+                &self.account_id,
+            )
             + <i32 as ::sqlx::encode::Encode<::sqlx::Postgres>>::size_hint(&self.profile_icon_id)
             + <Option<i64> as ::sqlx::encode::Encode<::sqlx::Postgres>>::size_hint(
                 &self.revision_date,
@@ -110,7 +112,7 @@ where
     > {
         let mut decoder = ::sqlx::postgres::types::PgRecordDecoder::new(value)?;
         let id = decoder.try_decode::<i32>()?;
-        let account_id = decoder.try_decode::<String>()?;
+        let account_id = decoder.try_decode::<Option<String>>()?;
         let profile_icon_id = decoder.try_decode::<i32>()?;
         let revision_date = decoder.try_decode::<Option<i64>>()?;
         let name = decoder.try_decode::<String>()?;

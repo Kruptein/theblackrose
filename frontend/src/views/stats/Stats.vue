@@ -16,7 +16,7 @@ const names = getChampionNames();
 onMounted(async () => {
     const headers = await getAuthHeader();
     const response = await fetch(backendUrl(`/api/stats/winrates/`), headers);
-    winrates.value = JSON.parse(await response.json());
+    winrates.value = await response.json();
 });
 </script>
 
@@ -29,7 +29,7 @@ onMounted(async () => {
         <input type="number" v-model="mingames" />
         <div style="margin-top: 50px"></div>
         <div v-for="champion in names" class="champion">
-            <img :src="`${getChampionImage(getChampionInfo(getChampionId(champion)).id)}`" />
+            <img :src="`${getChampionImage(getChampionId(champion))}`" />
             <div class="data">
                 <div class="name">{{ champion }}</div>
                 <div class="line"></div>

@@ -2,7 +2,11 @@ use std::{collections::HashSet, env, sync::Arc, time::Duration};
 
 use actix::{prelude::*, spawn};
 use chrono::TimeZone;
-use riven::{consts::Region, models::match_v4::Match, models::match_v4::MatchReference, RiotApi};
+use riven::{
+    consts::{PlatformRoute, RegionalRoute},
+    models::match_v5::{Info, Match},
+    RiotApi,
+};
 use sqlx::{Error, PgPool};
 use tokio::sync::Mutex;
 
@@ -141,9 +145,15 @@ async fn set_summoner_state(db: &PgPool, summoner: i32, state: bool) {
 
 async fn update_summoner_table(db: &PgPool, api: &RiotApi, summoner: &Summoner) {
     let summoner_id = summoner.id;
+    let account_id = &summoner.account_id;
+    if account_id.is_none() {
+        println!("Summoner with unknown account_id found: {}", summoner.name);
+        return;
+    }
+    let account_id = account_id.as_ref().unwrap();
     match api
         .summoner_v4()
-        .get_by_account_id(Region::EUW, summoner.account_id.as_str())
+        .get_by_account_id(PlatformRoute::EUW1, account_id.as_str())
         .await
     {
         Ok(summoner) => {
@@ -151,7 +161,7 @@ async fn update_summoner_table(db: &PgPool, api: &RiotApi, summoner: &Summoner) 
         }
         Err(_) => println!(
             "Could not update summoner data for account id: {} (username: {})",
-            summoner.account_id, summoner.name
+            account_id, summoner.name
         ),
     }
 }
@@ -173,58 +183,78 @@ async fn update_matches_for_summoner(
 
     'outer: loop {
         match api
-            .match_v4()
-            .get_matchlist(
-                Region::EUW,
-                summoner.account_id.as_str(),
+            .match_v5()
+            .get_match_ids_by_puuid(
+                RegionalRoute::EUROPE,
+                summoner.puuid.as_ref().unwrap().as_str(),
+                Some(100),
+                None,
+                None,
                 None,
                 Some(begin_index),
-                None,
-                None,
-                Some(begin_index + 100),
-                None,
                 None,
             )
             .await
         {
-            Ok(Some(games)) => {
-                let length = games.matches.len();
-                let batch_last_game_time =
-                    games.matches.get(0).map(|g| millis_to_chrono(g.timestamp));
-                last_game_time = last_game_time.or(batch_last_game_time);
-                println!(
-                    "{:?} ({} games) [{}]",
-                    batch_last_game_time, length, summoner.name
-                );
-                for game in games.matches {
-                    let naive_timestamp = millis_to_chrono(game.timestamp);
+            Ok(games) => {
+                for (index, game) in games.iter().enumerate() {
+                    match api
+                        .match_v5()
+                        .get_match(RegionalRoute::EUROPE, game.as_str())
+                        .await
+                    {
+                        Ok(Some(details)) => {
+                            let game_time = millis_to_chrono(details.info.game_creation);
 
-                    if naive_timestamp.le(&begin_time) {
-                        break 'outer;
-                    }
-                    let mut lock = game_processing_lock.lock().await;
-                    let has_game = lock.contains(&game.game_id);
-                    if !has_game {
-                        lock.insert(game.game_id);
-                    }
-                    drop(lock);
-                    if !has_game {
-                        if add_game_details(db, api, game.game_id).await {
-                            games_added += 1;
+                            // BATCH INFO PRINT
+                            if index == 0 {
+                                if last_game_time.is_none() {
+                                    last_game_time = Some(game_time);
+                                }
+                                println!(
+                                    "{:?} ({} games) [{}]",
+                                    game_time,
+                                    games.len(),
+                                    summoner.name
+                                );
+                            }
+
+                            if game_time.le(&begin_time) {
+                                break 'outer;
+                            }
+
+                            let mut lock = game_processing_lock.lock().await;
+                            let has_game = lock.contains(&details.info.game_id);
+                            if !has_game {
+                                lock.insert(details.info.game_id);
+                            }
+                            drop(lock);
+
+                            if !has_game {
+                                if add_game_details(db, &details).await {
+                                    games_added += 1;
+                                }
+                            }
+                            // add match reference
+                            if add_match_reference(db, details.info, &summoner).await {
+                                references_added += 1;
+                            }
+                        }
+                        Ok(None) => {
+                            println!("MATCH NOT FOUND ({:?})", game)
+                        }
+                        Err(e) => {
+                            println!("MATCH RETRIEVAL FAILED ({:?})", e);
+                            break;
                         }
                     }
-                    // add match reference
-                    if add_match_reference(db, game, summoner.id).await {
-                        references_added += 1;
-                    }
                 }
-                if length < 100 {
+                if games.len() < 100 {
                     break;
                 }
             }
-            Ok(None) => break,
             Err(e) => {
-                println!("MATCH RETRIEVAL FAILED ({:?})", e);
+                println!("MATCHLIST RETRIEVAL FAILED ({:?})", e);
                 break;
             }
         }
@@ -243,17 +273,15 @@ async fn update_matches_for_summoner(
     );
 }
 
-async fn add_game_details(db: &PgPool, api: &RiotApi, game_id: i64) -> bool {
+async fn add_game_details(db: &PgPool, details: &Match) -> bool {
+    let game_id = details.info.game_id;
     match m::get_match_details(db, game_id).await {
         Ok(_) => false,
-        Err(Error::RowNotFound) => match get_match_details(api, game_id).await {
-            Some(match_details) => {
-                m::add_match_details(db, match_details).await.unwrap();
-                println!("Added game {}", game_id);
-                true
-            }
-            None => false,
-        },
+        Err(Error::RowNotFound) => {
+            m::add_match_details(db, details).await.unwrap();
+            println!("Added game {}", game_id);
+            true
+        }
         Err(e) => {
             println!("ADD GAME DETAILS ERROR: {:?}", e);
             false
@@ -261,34 +289,20 @@ async fn add_game_details(db: &PgPool, api: &RiotApi, game_id: i64) -> bool {
     }
 }
 
-async fn add_match_reference(
-    db: &PgPool,
-    match_reference: MatchReference,
-    summoner_id: i32,
-) -> bool {
+async fn add_match_reference(db: &PgPool, match_reference: Info, summoner: &Summoner) -> bool {
     let game_id = match_reference.game_id.clone();
-    match m::get_match_reference(db, game_id, summoner_id).await {
+    match m::get_match_reference(db, game_id, summoner.id).await {
         Ok(_) => false,
         Err(Error::RowNotFound) => {
-            m::add_match_reference(db, match_reference, summoner_id)
+            m::add_match_reference(db, match_reference, summoner)
                 .await
                 .unwrap();
-            println!("Added match reference {} for {}", game_id, summoner_id);
+            println!("Added match reference {} for {}", game_id, summoner.id);
             true
         }
         Err(e) => {
             println!("ADD MATCH REFERENCE ERROR: {:?}", e);
             false
-        }
-    }
-}
-
-async fn get_match_details(api: &RiotApi, game_id: i64) -> Option<Match> {
-    match api.match_v4().get_match(Region::EUW, game_id).await {
-        Ok(result) => result,
-        Err(e) => {
-            println!("Match details fetching failed [{:?}] (game={})", e, game_id);
-            None
         }
     }
 }

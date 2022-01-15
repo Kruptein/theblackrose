@@ -9,10 +9,7 @@ pub async fn get_notifications(data: web::Data<AppState>, auth: BearerAuth) -> i
 
     match get_user_from_cache(&data.tokens, auth.token()).await {
         Some(user) => match n::get_notifications(db_pool, user).await {
-            Ok(notifications) => match serde_json::to_string(&notifications) {
-                Ok(data) => HttpResponse::Ok().json(data),
-                Err(_) => HttpResponse::InternalServerError().finish(),
-            },
+            Ok(notifications) => HttpResponse::Ok().json(&notifications),
             Err(e) => {
                 println!("Get notifications error: {:?}", e);
                 HttpResponse::InternalServerError().finish()
@@ -34,10 +31,7 @@ pub async fn remove_notification(
     match get_user_from_cache(&data.tokens, auth.token()).await {
         Some(user) => match n::owns_notification(db_pool, notification_id, user).await {
             Ok(true) => match n::remove_notification(db_pool, notification_id).await {
-                Ok(notifications) => match serde_json::to_string(&notifications) {
-                    Ok(data) => HttpResponse::Ok().json(data),
-                    Err(_) => HttpResponse::InternalServerError().finish(),
-                },
+                Ok(notifications) => HttpResponse::Ok().json(&notifications),
                 Err(e) => {
                     println!("Get notifications error: {:?}", e);
                     HttpResponse::InternalServerError().finish()

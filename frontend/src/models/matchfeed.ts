@@ -1,4 +1,12 @@
-import type { Match, Participant, Summoner, ParticipantStatsGeneral, ParticipantStatsKills } from "./match";
+import type {
+    Match,
+    ParticipantStatsGeneral,
+    ParticipantStatsItems,
+    ParticipantStatsKda,
+    ParticipantStatsProgress,
+    ParticipantStatsSpells,
+    Summoner,
+} from "./match";
 
 export interface MatchFeedFilter {
     names?: string[];
@@ -11,9 +19,11 @@ export interface MatchFeedFilter {
 export interface MatchFeedElement {
     matchInfo: Match;
     participants: {
-        participant: Participant;
         summoner?: Summoner;
         general: ParticipantStatsGeneral;
-        kills: ParticipantStatsKills;
+        items: ParticipantStatsItems;
+        kda: ParticipantStatsKda;
+        progress: ParticipantStatsProgress;
+        spells: ParticipantStatsSpells;
     }[];
 }

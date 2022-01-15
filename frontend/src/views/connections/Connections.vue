@@ -16,7 +16,7 @@ const connections = computed(() =>
 onMounted(async () => {
     const headers = await getAuthHeader();
     const response = await fetch(backendUrl("/api/connections/"), headers);
-    const data: Connection[] = JSON.parse(await response.json());
+    const data: Connection[] = await response.json();
     connectionStore.addConnections(...data);
     loading.value = false;
 });

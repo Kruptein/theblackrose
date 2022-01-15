@@ -1,5 +1,5 @@
 use actix_web::{get, web, HttpResponse, Responder};
-use riven::consts::Region;
+use riven::consts::PlatformRoute;
 
 use crate::{handlers::live as l, rito::summoners::get_summoner_by_name, AppState};
 
@@ -23,7 +23,7 @@ pub async fn get_live_info(data: web::Data<AppState>, path: web::Path<String>) -
 
     let live_game = riot_api
         .spectator_v4()
-        .get_current_game_info_by_summoner(Region::EUW, summoner_id)
+        .get_current_game_info_by_summoner(PlatformRoute::EUW1, summoner_id)
         .await;
 
     match live_game {
@@ -34,10 +34,7 @@ pub async fn get_live_info(data: web::Data<AppState>, path: web::Path<String>) -
                     println!("Win data collection failed: {:?}", info.unwrap_err());
                     return HttpResponse::InternalServerError().finish();
                 }
-                match serde_json::to_string(&info.unwrap()) {
-                    Ok(data) => HttpResponse::Ok().json(data),
-                    Err(_) => HttpResponse::InternalServerError().finish(),
-                }
+                HttpResponse::Ok().json(&info.unwrap())
             }
             None => HttpResponse::NotFound().body("Summoner not in game at the moment."),
         },

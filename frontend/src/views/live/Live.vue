@@ -15,7 +15,7 @@ onMounted(async () => {
     const headers = await getAuthHeader();
     const response = await fetch(backendUrl(`/api/live/${summonerName}/`), headers);
     if (response.ok) {
-        liveStuff.value = JSON.parse(await response.json());
+        liveStuff.value = await response.json();
         error.value = "";
     } else {
         liveStuff.value = [];

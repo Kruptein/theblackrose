@@ -16,7 +16,6 @@ actix-service = "=2.0.0-beta.5"
 actix-web = "=4.0.0-beta.5"
 actix-web-httpauth = "0.6.0-beta.1" 
 base64 = "0.13.0"
-cargo-expand = "1.0.7"
 chrono = { version = "0.4.19", features = ["serde"] }
 derive_more = "0.99.14"
 dotenv = "0.15.0"
@@ -24,10 +23,10 @@ env_logger = "0.8.3"
 jsonwebtoken = "7.2.0"
 log = "0.4.14"
 reqwest = "0.11.3"
-riven = "1.13.3"
+riven = "2.5.0"
 serde = "1.0.126"
 serde_json = "1.0.64"
-sqlx = { version = "0.5.3", features = ["macros", "offline", "postgres", "runtime-tokio-native-tls", "chrono"] }
+sqlx = { version = "0.5.10", features = ["macros", "offline", "postgres", "runtime-tokio-native-tls", "chrono"] }
 strum = "0.20.0"
 strum_macros = "0.20.1"
 tokio = { version = "1.6.0", features = ["full"] }

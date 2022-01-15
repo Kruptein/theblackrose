@@ -1,4 +1,4 @@
-use riven::models::match_v4 as RM;
+use riven::models::match_v5 as RM;
 use riven::models::summoner_v4 as RS;
 use sqlx::{query, query_as, Error, PgPool};
 
@@ -40,24 +40,36 @@ pub async fn update_summoner(conn: &PgPool, id: i32, summoner: RS::Summoner) -> 
 
 pub async fn get_or_add_partial_summoner(
     conn: &PgPool,
-    summoner: RM::Player,
+    participant: &RM::Participant,
 ) -> Result<Summoner, Error> {
-    let acc_id = summoner.account_id.clone();
     let db_summoner = query_as!(
         Summoner,
-        "SELECT * FROM summoners WHERE account_id = $1",
-        acc_id
+        "SELECT * FROM summoners WHERE puuid = $1",
+        participant.puuid
     )
     .fetch_one(conn)
     .await;
     match db_summoner {
         Ok(summoner) => Ok(summoner),
-        Err(_) => add_partial_summoner(conn, summoner).await,
+        Err(_) => add_partial_summoner(conn, participant).await,
     }
 }
 
-async fn add_partial_summoner(conn: &PgPool, summoner: RM::Player) -> Result<Summoner, Error> {
-    query_as!(Summoner, "INSERT INTO summoners (account_id, profile_icon_id, name, summoner_id) VALUES ($1, $2, $3, $4) RETURNING *", summoner.account_id.as_str(), summoner.profile_icon, summoner.summoner_name.as_str(), summoner.summoner_id.as_deref()).fetch_one(conn).await
+async fn add_partial_summoner(
+    conn: &PgPool,
+    participant: &RM::Participant,
+) -> Result<Summoner, Error> {
+    query_as!(
+        Summoner,
+        "INSERT INTO summoners (puuid, profile_icon_id, name, summoner_id)
+        VALUES ($1, $2, $3, $4) RETURNING *",
+        participant.puuid,
+        participant.profile_icon,
+        participant.summoner_name,
+        participant.summoner_id
+    )
+    .fetch_one(conn)
+    .await
 }
 
 pub async fn set_summoner_last_query_time(
@@ -130,12 +142,12 @@ pub async fn get_summoner_quick_stats(
             SUM(assists) as "total_assists!",
             SUM(assists) filter (WHERE timestamp >= $2) as "season_assists!"
         FROM match_references m
-        INNER JOIN participants p ON m.game_id = p.game_id
-        INNER JOIN participant_stats_general pg ON p.id = pg.participant_id
-        INNER JOIN participant_stats_kills pk ON p.id = pk.participant_id
+        INNER JOIN participant_stats_general pg ON pg.game_id = m.game_id
+        INNER JOIN participant_stats_kda pk ON pk.game_id = m.game_id
         WHERE
             m.summoner_id = $1 AND
-            p.summoner_id = $1
+            pg.summoner_id = $1 AND
+            pk.summoner_id = $1
         "#,
         summoner.id,
         1610064000000 // season 11 start day

@@ -12,7 +12,7 @@ const notifications: Ref<Notification[]> = ref([]);
 async function getNotifications(): Promise<void> {
     const headers = await getAuthHeader();
     const response = await fetch(backendUrl("/api/notifications/"), headers);
-    notifications.value = JSON.parse(await response.json());
+    notifications.value = await response.json();
 }
 
 async function removeNotification(sliceId: number): Promise<void> {

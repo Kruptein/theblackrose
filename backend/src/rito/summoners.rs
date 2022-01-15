@@ -1,4 +1,5 @@
-use riven::{consts::Region, models::summoner_v4::Summoner as RiotSummoner, RiotApi};
+use riven::consts::PlatformRoute;
+use riven::{models::summoner_v4::Summoner as RiotSummoner, RiotApi};
 use sqlx::{Error, PgPool};
 
 use crate::handlers::summoners::{self as h, add_summoner};
@@ -25,7 +26,7 @@ async fn get_summoner_name_from_model(pool: &PgPool, name: &str) -> Result<Summo
 
 async fn get_summoner_from_api(api: &RiotApi, name: &str) -> Option<RiotSummoner> {
     api.summoner_v4()
-        .get_by_summoner_name(Region::EUW, name)
+        .get_by_summoner_name(PlatformRoute::EUW1, name)
         .await
         .expect("Get summoner failed.")
 }

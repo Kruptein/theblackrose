@@ -5,5 +5,5 @@ use std::env;
 
 pub fn create_riot_api() -> RiotApi {
     let api_key = env::var("RGAPI_KEY").expect("RGAPI_KEY is not set as an environment variable!");
-    RiotApi::with_key(api_key)
+    RiotApi::new(api_key)
 }

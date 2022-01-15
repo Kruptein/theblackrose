@@ -8,7 +8,7 @@ export function backendUrl(path: string): string {
 (window as any).bu = async (url: string) => {
     const headers = await getAuthHeader();
     const response = await fetch(backendUrl(url), headers);
-    return JSON.parse(await response.json());
+    return await response.json();
 };
 
 export async function getAuthHeader(): Promise<{ headers: { Authorization: string } }> {
@@ -39,5 +39,5 @@ export async function fetchWithQuery<T>(apiPath: string, filter?: MatchFeedFilte
         matchUrl += `?${queries.join("&")}`;
     }
     const response = await fetch(backendUrl(matchUrl), headers);
-    return JSON.parse(await response.json());
+    return await response.json();
 }

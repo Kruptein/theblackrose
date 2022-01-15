@@ -18,7 +18,7 @@ onMounted(async () => {
         const headers = await getAuthHeader();
 
         const response = await fetch(backendUrl(`/api/summoners/${route.params.name}/`), headers);
-        const data: { core: Summoner } = JSON.parse(await response.json());
+        const data: { core: Summoner } = await response.json();
         connectionStore.addConnections(data.core);
     }
 });

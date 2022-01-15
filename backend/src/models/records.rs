@@ -1,4 +1,4 @@
-use riven::models::match_v4::ParticipantStats;
+use riven::models::match_v5::Participant;
 use strum_macros::*;
 
 #[derive(EnumIter, Clone, Debug, Deserialize, Display, PartialEq)]
@@ -12,7 +12,7 @@ pub enum RecordType {
 }
 
 impl RecordType {
-    pub fn get_value(&self, stats: &ParticipantStats, duration: i64) -> f32 {
+    pub fn get_value(&self, stats: &Participant, duration: i64) -> f32 {
         match self {
             RecordType::Kills => stats.kills as f32,
             RecordType::Deaths => stats.deaths as f32,

@@ -6,7 +6,7 @@ export async function fetchConnections(): Promise<string[]> {
     const headers = await getAuthHeader();
     const response = await fetch(backendUrl("/api/connections/"), headers);
 
-    const connectionData: Connection[] = JSON.parse(await response.json());
+    const connectionData: Connection[] = await response.json();
     return connectionData.map((c: Connection) => c.name);
 }
 

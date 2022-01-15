@@ -1,11 +1,13 @@
-use riven::models::match_v4 as R;
+use std::convert::{TryInto};
+
+use riven::models::match_v5 as R;
 use sqlx::{query, query_as, Error, PgPool};
 use strum::IntoEnumIterator;
 
 use crate::models::{
     matches::{
-        Match, MatchFeedElement, MatchFeedParticipant, MatchReference, Participant,
-        ParticipantStatsGeneral, ParticipantStatsKills,
+        Match, MatchFeedElement, MatchFeedParticipant, MatchReference,
+        ParticipantStatsGeneral, ParticipantStatsItems, ParticipantStatsKda, ParticipantStatsProgress, ParticipantStatsSpells
     },
     records::RecordType,
     summoners::Summoner,
@@ -31,7 +33,30 @@ pub async fn get_match_reference(
 pub async fn get_game_info(game_id: i64, conn: &PgPool) -> Result<MatchFeedElement, Error> {
     let match_info = get_match_details(conn, game_id).await?;
 
-    let participants = query_as!(MatchFeedParticipant, r#"SELECT p as "participant!: Participant", psg as "general!: ParticipantStatsGeneral", psk as "kills!: ParticipantStatsKills", s as "summoner: Summoner" FROM participants p INNER JOIN participant_stats_general psg ON psg.participant_id = p.id INNER JOIN participant_stats_kills psk ON psk.participant_id = p.id LEFT OUTER JOIN summoners s ON p.summoner_id = s.id WHERE p.game_id = $1 ORDER BY psg.win"#, game_id).fetch_all(conn).await.unwrap();
+    let participants = query_as!(MatchFeedParticipant, 
+        r#"
+        SELECT
+            psg as "general!: ParticipantStatsGeneral",
+            psi as "items!: ParticipantStatsItems",
+            psk as "kda!: ParticipantStatsKda",
+            psp as "progress!: ParticipantStatsProgress",
+            pss as "spells!: ParticipantStatsSpells",
+            s as "summoner: Summoner"
+        FROM participant_stats_general psg
+        INNER JOIN participant_stats_items psi
+            ON psi.game_id = psg.game_id AND psi.summoner_id = psg.summoner_id
+        INNER JOIN participant_stats_kda psk
+            ON psk.game_id = psg.game_id AND psk.summoner_id = psg.summoner_id
+        INNER JOIN participant_stats_progress psp
+            ON psp.game_id = psg.game_id AND psp.summoner_id = psg.summoner_id
+        INNER JOIN participant_stats_spells pss
+            ON pss.game_id = psg.game_id AND pss.summoner_id = psg.summoner_id
+        LEFT OUTER JOIN summoners s
+            ON psg.summoner_id = s.id
+        WHERE
+            psg.game_id = $1
+        ORDER BY psg.win"#,
+         game_id).fetch_all(conn).await.unwrap();
 
     Ok(MatchFeedElement {
         match_info,
@@ -43,13 +68,25 @@ pub async fn get_game_info(game_id: i64, conn: &PgPool) -> Result<MatchFeedEleme
 
 pub async fn add_match_reference(
     conn: &PgPool,
-    match_reference: R::MatchReference,
-    summoner_id: i32,
+    info: R::Info,
+    summoner: &Summoner,
 ) -> Result<MatchReference, Error> {
-    let queue: u16 = match_reference.queue.into();
-    let queue: i32 = queue.into();
-    query_as!(MatchReference, "INSERT INTO match_references (game_id, summoner_id, role, platform_id, champion, lane, queue, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
-match_reference.game_id, summoner_id, match_reference.role, match_reference.platform_id, match_reference.champion.identifier(), match_reference.lane, queue, match_reference.timestamp).fetch_one(conn).await
+    let queue: i32 = u16::from(info.queue_id).into();
+    let puuid = summoner.puuid.as_ref().unwrap();
+    let participant = info.participants.into_iter().find(|p| &p.puuid == puuid).unwrap();
+    query_as!(MatchReference, "
+        INSERT INTO match_references (
+            game_id, summoner_id, role, platform_id, champion, lane, queue, timestamp
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+        info.game_id,
+        summoner.id,
+        participant.role,
+        info.platform_id,
+        participant.champion().unwrap().identifier(),
+        participant.lane,
+        queue,
+        info.game_start_timestamp
+    ).fetch_one(conn).await
 }
 
 pub async fn get_match_details(conn: &PgPool, game_id: i64) -> Result<Match, Error> {
@@ -66,30 +103,52 @@ fn get_season_from_version(version: &str) -> i16 {
     }
 }
 
-pub async fn add_match_details(conn: &PgPool, match_details: R::Match) -> Result<Match, Error> {
-    let queue: u16 = match_details.queue_id.into();
-    let map: u8 = match_details.map_id.into();
+pub async fn add_match_details(conn: &PgPool, details: &R::Match) -> Result<Match, Error> {
+    let info = &details.info;
+    let queue: u16 = info.queue_id.into();
+    let map: u8 = info.map_id.into();
     let map: i16 = map.into();
-    let season_id = get_season_from_version(&match_details.game_version);
-    let game_type: String = match_details.game_type.to_string();
-    let game_mode: String = match_details.game_type.to_string();
+    let season_id = get_season_from_version(&info.game_version);
 
-    let game = query_as!(Match, "INSERT INTO matches (game_id, queue_id, game_type, game_duration, platform_id, game_creation, season_id, game_version, map_id, game_mode) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *",
-match_details.game_id, queue as i16, game_type, match_details.game_duration, match_details.platform_id, match_details.game_creation, season_id, match_details.game_version, map, game_mode).fetch_one(conn).await;
+    let game = query_as!(
+        Match,
+        "INSERT INTO matches (
+        game_creation, game_duration, game_id, game_mode, game_name,
+        game_start_timestamp, game_type, game_version, map_id,
+        platform_id, queue_id, season_id, tournament_code,
+        data_version, match_id
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    RETURNING *",
+        info.game_creation,
+        info.game_duration,
+        info.game_id,
+        info.game_mode.to_string(),
+        info.game_name,
+        info.game_start_timestamp,
+        info.game_type.to_string(),
+        info.game_version,
+        map,
+        info.platform_id,
+        queue as i16,
+        season_id,
+        info.tournament_code,
+        details.metadata.data_version,
+        details.metadata.match_id
+    )
+    .fetch_one(conn)
+    .await;
 
-    for team_stat in match_details.teams {
-        add_match_team_stats(conn, match_details.game_id, team_stat).await;
+    for team_stat in &info.teams {
+        add_match_team_stats(conn, info.game_id, team_stat).await;
     }
 
-    let mut md = match_details.participant_identities.into_iter();
-    for participant in match_details.participants {
-        let identity = md.find(|p| p.participant_id == participant.participant_id);
+    for participant in &info.participants {
         add_participant(
             conn,
-            match_details.game_id,
-            match_details.game_duration,
+            info.game_id,
+            info.game_duration,
             participant,
-            identity,
             queue,
             season_id,
         )
@@ -99,24 +158,27 @@ match_details.game_id, queue as i16, game_type, match_details.game_duration, mat
     game
 }
 
-async fn add_match_team_stats(conn: &PgPool, game_id: i64, stats: R::TeamStats) {
-    let team: u8 = stats.team_id.into();
+async fn add_match_team_stats(conn: &PgPool, game_id: i64, stats: &R::Team) {
+    let team: u8 = u16::from(stats.team_id).try_into().unwrap();
     let team: i16 = team.into();
+    let objectives = &stats.objectives;
 
-    query!("INSERT INTO team_stats (game_id, team_id, tower_kills, rift_herald_kills, first_blood, inhibitor_kills, first_baron, first_dragon, dominion_victory_score, dragon_kills,baron_kills, first_inhibitor, first_tower, vilemaw_kills, first_rift_herald, win) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)", game_id, team.into(),
-    stats.tower_kills,
-    stats.rift_herald_kills,
-    stats.first_blood,
-    stats.inhibitor_kills,
-    stats.first_baron,
-    stats.first_dragon,
-    stats.dominion_victory_score,
-    stats.dragon_kills,
-    stats.baron_kills,
-    stats.first_inhibitor,
-    stats.first_tower,
-    stats.vilemaw_kills,
-    stats.first_rift_herald,
+    query!("
+    INSERT INTO team_stats (
+        game_id, team_id, tower_kills, rift_herald_kills, first_blood, inhibitor_kills, first_baron, first_dragon,
+        dragon_kills, baron_kills, first_inhibitor, first_tower, first_rift_herald, win
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)", game_id, team.into(),
+    objectives.tower.kills,
+    objectives.rift_herald.kills,
+    objectives.champion.first,
+    objectives.inhibitor.kills,
+    objectives.baron.first,
+    objectives.dragon.first,
+    objectives.dragon.kills,
+    objectives.baron.kills,
+    objectives.inhibitor.first,
+    objectives.tower.first,
+    objectives.rift_herald.first,
     stats.win).execute(conn).await.unwrap();
 }
 
@@ -124,31 +186,18 @@ async fn add_participant(
     conn: &PgPool,
     game_id: i64,
     game_duration: i64,
-    participant: R::Participant,
-    identity: Option<R::ParticipantIdentity>,
+    participant: &R::Participant,
     queue_id: u16,
     season_id: i16,
 ) {
-    let team: u8 = participant.team_id.into();
-    let team: i16 = team.into();
-    let highest_tier: Option<&str> = participant.highest_achieved_season_tier.map(|t| t.into());
-    let summoner_id = match identity {
-        Some(identity) => Some(
-            get_or_add_partial_summoner(conn, identity.player)
-                .await
-                .unwrap()
-                .id,
-        ),
-        None => None,
-    };
-    let new_participant = query_as!(Participant, "INSERT INTO participants (game_id, participant_id, summoner_id, champion_id, team_id, spell1_id, spell2_id, highest_achieved_season_tier) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
-game_id, participant.participant_id, summoner_id, participant.champion_id.identifier(), team, participant.spell1_id, participant.spell2_id, highest_tier).fetch_one(conn).await.unwrap();
-
+    let summoner = get_or_add_partial_summoner(conn, &participant)
+        .await
+        .unwrap();
+    
     add_participant_stats(
         conn,
-        &new_participant,
-        participant.stats,
-        summoner_id,
+        participant,
+        Some(summoner.id),
         game_id,
         game_duration,
         queue_id,
@@ -164,65 +213,267 @@ struct RecordValue {
 
 async fn add_participant_stats(
     conn: &PgPool,
-    participant: &Participant,
-    participant_stats: R::ParticipantStats,
+    stats: &R::Participant,
     summoner_id: Option<i32>,
     game_id: i64,
     game_duration: i64,
     queue_id: u16,
     season_id: i16,
 ) {
-    query!("INSERT INTO participant_stats_general (participant_id, champ_level, win, gold_earned, gold_spent, item0, item1, item2, item3, item4, item5, item6) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",participant.id,
+    let participant_id: i16 = stats.participant_id.try_into().unwrap();
+    let profile_icon: i16 = stats.profile_icon.try_into().unwrap();
+    let summoner_level: i16 = stats.summoner_level.try_into().unwrap();
 
-    participant_stats.champ_level,
-    participant_stats.win,
+    query!("INSERT INTO participant_stats_account (
+        game_id, summoner_id, participant_id, profile_icon, puuid, riot_id_name, riot_id_tagline, summoner_level, summoner_name)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        game_id, summoner_id, participant_id, profile_icon, stats.puuid, stats.riot_id_name,
+        stats.riot_id_tagline, summoner_level, stats.summoner_name
+    ).execute(conn).await.unwrap();
 
-    participant_stats.gold_earned,
-    participant_stats.gold_spent,
+    let champion_id: i16 = stats.champion().unwrap().0;
+    let team_id: i16 = i32::from(u16::from(stats.team_id)).try_into().unwrap();
 
-    participant_stats.item0,
-    participant_stats.item1,
-    participant_stats.item2,
-    participant_stats.item3,
-    participant_stats.item4,
-    participant_stats.item5,
-    participant_stats.item6).execute(conn).await.unwrap();
+    query!(
+        "
+    INSERT INTO participant_stats_general (
+        game_id, summoner_id, champion_id, game_ended_in_early_surrender, game_ended_in_surrender,
+        individual_position, team_early_surrendered, team_id, team_position, win
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        game_id,
+        summoner_id,
+        champion_id,
+        stats.game_ended_in_early_surrender,
+        stats.game_ended_in_surrender,
+        stats.individual_position,
+        stats.team_early_surrendered,
+        team_id,
+        stats.team_position,
+        stats.win,
+    )
+    .execute(conn)
+    .await
+    .unwrap();
 
-    query!("INSERT INTO participant_stats_kills (participant_id, kills, deaths, assists, double_kills, triple_kills, quadra_kills, penta_kills, unreal_kills, largest_multi_kill, largest_killing_spree, killing_sprees, longest_time_spent_living, first_tower_kill, first_tower_assist, first_blood_kill, first_blood_assist, first_inhibitor_kill, first_inhibitor_assist, inhibitor_kills, turret_kills, neutral_minions_killed, neutral_minions_killed_enemy_jungle, neutral_minions_killed_team_jungle, total_minions_killed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)", participant.id,
+    query!("
+    INSERT INTO participant_stats_damage (
+        game_id, summoner_id, damage_dealt_to_buildings, damage_dealt_to_objectives, damage_dealt_to_turrets,
+        damage_self_mitigated, largest_critical_strike, magic_damage_dealt, magic_damage_dealt_to_champions,
+        magic_damage_taken, physical_damage_dealt, physical_damage_dealt_to_champions, physical_damage_taken,
+        total_damage_dealt, total_damage_dealt_to_champions, total_damage_shielded_on_teammates, total_damage_taken,
+        total_heal, total_heals_on_teammates, total_units_healed, true_damage_dealt, true_damage_dealt_to_champions, true_damage_taken
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)",
+    game_id,
+    summoner_id,
+    stats.damage_dealt_to_buildings.unwrap(),
+    stats.damage_dealt_to_objectives,
+    stats.damage_dealt_to_turrets,
+    stats.damage_self_mitigated,
+    stats.largest_critical_strike,
+    stats.magic_damage_dealt,
+    stats.magic_damage_dealt_to_champions,
+    stats.magic_damage_taken,
+    stats.physical_damage_dealt,
+    stats.physical_damage_dealt_to_champions,
+    stats.physical_damage_taken,
+    stats.total_damage_dealt,
+    stats.total_damage_dealt_to_champions,
+    stats.total_damage_shielded_on_teammates,
+    stats.total_damage_taken,
+    stats.total_heal,
+    stats.total_heals_on_teammates,
+    stats.total_units_healed,
+    stats.true_damage_dealt,
+    stats.true_damage_dealt_to_champions,
+    stats.true_damage_taken
+    
+).execute(conn).await.unwrap();
 
-    participant_stats.kills,
-    participant_stats.deaths,
-    participant_stats.assists,
+let consumables_purchased: i16 = stats.consumables_purchased.try_into().unwrap();
+let detector_wards_placed: i16 = stats.detector_wards_placed.try_into().unwrap();
+let item0: i16 = stats.item0.try_into().unwrap();
+let item1: i16 = stats.item1.try_into().unwrap();
+let item2: i16 = stats.item2.try_into().unwrap();
+let item3: i16 = stats.item3.try_into().unwrap();
+let item4: i16 = stats.item4.try_into().unwrap();
+let item5: i16 = stats.item5.try_into().unwrap();
+let item6: i16 = stats.item6.try_into().unwrap();
+let items_purchased: i16 = stats.items_purchased.try_into().unwrap();
+let sight_wards_bought_in_game: i16 = stats.sight_wards_bought_in_game.try_into().unwrap();
+let vision_wards_bought_in_game: i16 = stats.vision_wards_bought_in_game.try_into().unwrap();
 
-    participant_stats.double_kills,
-    participant_stats.triple_kills,
-    participant_stats.quadra_kills,
-    participant_stats.penta_kills,
-    participant_stats.unreal_kills,
-    participant_stats.largest_multi_kill,
-    participant_stats.largest_killing_spree,
-    participant_stats.killing_sprees,
+query!("
+    INSERT INTO participant_stats_items (
+        game_id, summoner_id, consumables_purchased, detector_wards_placed,
+        item0, item1, item2, item3, item4, item5, item6,
+        items_purchased, sight_wards_bought_in_game, vision_wards_bought_in_game
+    ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14
+    )",
+    game_id,
+    summoner_id,
+    consumables_purchased,
+    detector_wards_placed,
+    item0,
+    item1,
+    item2,
+    item3,
+    item4,
+    item5,
+    item6,
+    items_purchased,
+    sight_wards_bought_in_game,
+    vision_wards_bought_in_game
+    ).execute(conn).await.unwrap();
 
-    participant_stats.longest_time_spent_living,
+    let assists: i16 = stats.assists.try_into().unwrap();
+    let deaths: i16 = stats.deaths.try_into().unwrap();
+    let double_kills: i16 = stats.double_kills.try_into().unwrap();
+    let dragon_kills: i16 = stats.dragon_kills.try_into().unwrap();
+    let inhibitor_kills: i16 = stats.inhibitor_kills.try_into().unwrap();
+    let inhibitor_takedowns: Option<i16> = stats.inhibitor_takedowns.map(TryInto::try_into).transpose().unwrap();
+    let inhibitors_lost: Option<i16> = stats.inhibitors_lost.map(TryInto::try_into).transpose().unwrap();
+    let killing_sprees: i16 = stats.killing_sprees.try_into().unwrap();
+    let kills: i16 = stats.kills.try_into().unwrap();
+    let largest_killing_spree: i16 = stats.largest_killing_spree.try_into().unwrap();
+    let largest_multi_kill: i16 = stats.largest_multi_kill.try_into().unwrap();
+    let neutral_minions_killed: i16 = stats.neutral_minions_killed.try_into().unwrap();
+    let nexus_kills: i16 = stats.nexus_kills.try_into().unwrap();
+    let nexus_lost: Option<i16> = stats.nexus_lost.map(TryInto::try_into).transpose().unwrap();
+    let nexus_takedowns: Option<i16> = stats.nexus_takedowns.map(TryInto::try_into).transpose().unwrap();
+    let objectives_stolen: i16 = stats.objectives_stolen.try_into().unwrap();
+    let objectives_stolen_assists: i16 = stats.objectives_stolen_assists.try_into().unwrap();
+    let penta_kills: i16 = stats.penta_kills.try_into().unwrap();
+    let quadra_kills: i16 = stats.quadra_kills.try_into().unwrap();
+    let total_minions_killed: i16 = stats.total_minions_killed.try_into().unwrap();
+    let triple_kills: i16 = stats.triple_kills.try_into().unwrap();
+    let turret_kills: i16 = stats.turret_kills.try_into().unwrap();
+    let turrets_lost: Option<i16> = stats.turrets_lost.map(TryInto::try_into).transpose().unwrap();
+    let turret_takedowns: Option<i16> = stats.turret_takedowns.map(TryInto::try_into).transpose().unwrap();
+    let unreal_kills: i16 = stats.unreal_kills.try_into().unwrap();
+    let wards_killed: i16 = stats.wards_killed.try_into().unwrap();
 
-    participant_stats.first_tower_kill,
-    participant_stats.first_tower_assist,
-    participant_stats.first_blood_kill,
-    participant_stats.first_blood_assist,
-    participant_stats.first_inhibitor_kill,
-    participant_stats.first_inhibitor_assist,
+    query!("
+    INSERT INTO participant_stats_kda (
+        game_id, summoner_id, assists, deaths, double_kills, dragon_kills, first_blood_assist, first_blood_kill,
+        first_tower_assist, first_tower_kill, inhibitor_kills, inhibitor_takedowns, inhibitors_lost,
+        killing_sprees, kills, largest_killing_spree, largest_multi_kill, neutral_minions_killed, nexus_kills,
+        nexus_takedowns, nexus_lost, objectives_stolen, objectives_stolen_assists, penta_kills, quadra_kills,
+        total_minions_killed, triple_kills, turret_kills, turret_takedowns, turrets_lost, unreal_kills, wards_killed
+    ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+        $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+        $31, $32
+    )",
+    game_id,
+    summoner_id,
+    assists,
+    deaths,
+    double_kills,
+    dragon_kills,
+    stats.first_blood_assist,
+    stats.first_blood_kill,
+    stats.first_tower_assist,
+    stats.first_tower_kill,
+    inhibitor_kills,
+    inhibitor_takedowns,
+    inhibitors_lost,
+    killing_sprees,
+    kills,
+    largest_killing_spree,
+    largest_multi_kill,
+    neutral_minions_killed,
+    nexus_kills,
+    nexus_takedowns,
+    nexus_lost,
+    objectives_stolen,
+    objectives_stolen_assists,
+    penta_kills,
+    quadra_kills,
+    total_minions_killed,
+    triple_kills,
+    turret_kills,
+    turret_takedowns,
+    turrets_lost,
+    unreal_kills,
+    wards_killed
+    ).execute(conn).await.unwrap();
 
-    participant_stats.inhibitor_kills,
-    participant_stats.turret_kills,
+    let bounty_level: i16 = stats.bounty_level.try_into().unwrap();
+    let champ_level: i16 = stats.champ_level.try_into().unwrap();
+    let champion_transform: i16 = stats.champion_transform.try_into().unwrap();
 
-    participant_stats.neutral_minions_killed,
-    participant_stats.neutral_minions_killed_enemy_jungle,
-    participant_stats.neutral_minions_killed_team_jungle,
-    participant_stats.total_minions_killed).execute(conn).await.unwrap();
+    let longest_time_spent_living: i16 = stats.longest_time_spent_living.try_into().unwrap();
+    let time_c_cing_others: i16 = stats.time_c_cing_others.try_into().unwrap();
+    let time_played: i16 = stats.time_played.try_into().unwrap();
+
+    let total_time_spent_dead: i16 = stats.total_time_spent_dead.try_into().unwrap();
+    let vision_score: i16 = stats.vision_score.try_into().unwrap();
+    let wards_placed: i16 = stats.wards_placed.try_into().unwrap();
+
+    query!("
+    INSERT INTO participant_stats_progress (
+        game_id, summoner_id, bounty_level, champ_experience, champ_level, champion_transform,
+        gold_earned, gold_spent, longest_time_spent_living, time_c_cing_others, time_played,
+        total_time_cc_dealt, total_time_spent_dead, vision_score, wards_placed
+    ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14, $15
+    )",
+    game_id,
+    summoner_id,
+    bounty_level,
+    stats.champ_experience,
+    champ_level,
+    champion_transform,
+    stats.gold_earned,
+    stats.gold_spent,
+    longest_time_spent_living,
+    time_c_cing_others,
+    time_played,
+    stats.total_time_cc_dealt,
+    total_time_spent_dead,
+    vision_score,
+    wards_placed
+    ).execute(conn).await.unwrap();
+
+    let spell1_casts: i16 = stats.spell1_casts.try_into().unwrap();
+    let spell2_casts: i16 = stats.spell2_casts.try_into().unwrap();
+    let spell3_casts: i16 = stats.spell3_casts.try_into().unwrap();
+    let spell4_casts: i16 = stats.spell4_casts.try_into().unwrap();
+    let summoner1_casts: i16 = stats.summoner1_casts.try_into().unwrap();
+    let summoner1_id: i16 = stats.summoner1_id.try_into().unwrap();
+    let summoner2_casts: i16 = stats.summoner2_casts.try_into().unwrap();
+    let summoner2_id: i16 = stats.summoner2_id.try_into().unwrap();
+
+    query!("
+    INSERT INTO participant_stats_spells (
+        game_id, summoner_id, spell1_casts, spell2_casts, spell3_casts, spell4_casts,
+        summoner1_casts, summoner1_id, summoner2_casts, summoner2_id
+    ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+    )",
+    game_id,
+    summoner_id,
+    spell1_casts,
+    spell2_casts,
+    spell3_casts,
+    spell4_casts,
+    summoner1_casts,
+    summoner1_id,
+    summoner2_casts,
+    summoner2_id
+    ).execute(conn).await.unwrap();
+
+    
+
+
 
     if let Some(summoner_id) = summoner_id {
         for record_type in RecordType::iter() {
-            let game_value = record_type.get_value(&participant_stats, game_duration);
+            let game_value = record_type.get_value(&stats, game_duration);
             let record_int = record_type.clone() as i16;
             let record = query_as!(RecordValue, "SELECT r.id, r.value FROM records r INNER JOIN matches m USING (game_id) WHERE r.record_type = $1 AND r.summoner_id = $2 AND m.queue_id = $3 AND m.season_id = $4",
                 record_int,
@@ -284,53 +535,4 @@ async fn add_participant_stats(
             };
         }
     }
-
-    query!("INSERT INTO participant_stats_damage (participant_id, true_damage_dealt, true_damage_dealt_to_champions, true_damage_taken, physical_damage_dealt, physical_damage_dealt_to_champions, physical_damage_taken, magic_damage_dealt, magic_damage_dealt_to_champions, magical_damage_taken, total_damage_dealt, total_damage_dealt_to_champions, total_damage_taken, damage_dealt_to_turrets, damage_dealt_to_objectives, damage_self_mitigated, largest_critical_strike) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)",participant.id,
-    participant_stats.true_damage_dealt,
-    participant_stats.true_damage_dealt_to_champions,
-    participant_stats.true_damage_taken,
-    participant_stats.physical_damage_dealt,
-    participant_stats.physical_damage_dealt_to_champions,
-    participant_stats.physical_damage_taken,
-    participant_stats.magic_damage_dealt,
-    participant_stats.magic_damage_dealt_to_champions,
-    participant_stats.magical_damage_taken,
-    participant_stats.total_damage_dealt,
-    participant_stats.total_damage_dealt_to_champions,
-    participant_stats.total_damage_taken,
-    participant_stats.damage_dealt_to_turrets,
-    participant_stats.damage_dealt_to_objectives,
-    participant_stats.damage_self_mitigated,
-    participant_stats.largest_critical_strike).execute(conn).await.unwrap();
-
-    query!("INSERT INTO participant_stats_scores (participant_id, combat_player_score, 
-        objective_player_score, total_player_score, total_score_rank, team_objective, player_score0, player_score1, player_score2, player_score3, player_score4, player_score5, player_score6, player_score7, player_score8, player_score9) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)",participant.id,
-    participant_stats.combat_player_score,
-    participant_stats.objective_player_score,
-    participant_stats.total_player_score,
-    participant_stats.total_score_rank,
-    participant_stats.team_objective,
-    participant_stats.player_score0,
-    participant_stats.player_score1,
-    participant_stats.player_score2,
-    participant_stats.player_score3,
-    participant_stats.player_score4,
-    participant_stats.player_score5,
-    participant_stats.player_score6,
-    participant_stats.player_score7,
-    participant_stats.player_score8,
-    participant_stats.player_score9,
-).execute(conn).await.unwrap();
-
-    query!("INSERT INTO participant_stats_utility (participant_id, total_units_healed, total_heal, total_time_crowd_control_dealt, time_c_cing_others, wards_placed, vision_wards_bought_in_game, vision_score, wards_killed, sight_wards_bought_in_game) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
-    participant.id,
-participant_stats.total_units_healed,
-                    participant_stats.total_heal,
-participant_stats.total_time_crowd_control_dealt,
-participant_stats.time_c_cing_others,
-participant_stats.wards_placed,
-participant_stats.vision_wards_bought_in_game,
-participant_stats.vision_score,
-participant_stats.wards_killed,
-participant_stats.sight_wards_bought_in_game).execute(conn).await.unwrap();
 }

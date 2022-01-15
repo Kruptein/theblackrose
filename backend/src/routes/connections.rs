@@ -18,10 +18,7 @@ pub async fn get_connections(data: web::Data<AppState>, auth: BearerAuth) -> imp
         Some(user) => {
             let user = get_user_by_id(&db_pool, user).await.unwrap();
             match h::get_connection_short_info(&db_pool, user).await {
-                Ok(connections) => match serde_json::to_string(&connections) {
-                    Ok(data) => HttpResponse::Ok().json(data),
-                    Err(_) => HttpResponse::InternalServerError().finish(),
-                },
+                Ok(connections) => HttpResponse::Ok().json(&connections),
                 Err(_) => HttpResponse::Ok().finish(),
             }
         }
@@ -45,10 +42,10 @@ pub async fn add_connection(
             match get_summoner_by_name(riot_api, db_pool, username.as_str()).await {
                 Some(summoner) => match h::add_connection(db_pool, user, summoner).await {
                     Ok(connection) => {
-                        &data
-                            .update_task
+                        data.update_task
                             .send(ConnectionUpdateMessage { connection })
-                            .await;
+                            .await
+                            .unwrap();
                         HttpResponse::Created().finish()
                     }
                     Err(_) => HttpResponse::Conflict().finish(),
@@ -73,10 +70,10 @@ pub async fn refresh_connection(
     match get_user_from_cache(&data.tokens, auth.token()).await {
         Some(_) => match get_summoner_by_name(riot_api, db_pool, username.as_str()).await {
             Some(summoner) => {
-                &data
-                    .update_task
+                data.update_task
                     .send(SummonerUpdateMessage { summoner })
-                    .await;
+                    .await
+                    .unwrap();
                 HttpResponse::Ok().finish()
             }
             None => HttpResponse::NotFound().finish(),

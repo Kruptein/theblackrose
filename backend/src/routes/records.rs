@@ -38,10 +38,7 @@ pub async fn get_records(
         Some(user) => {
             let user = get_user_by_id(&db_pool, user).await.unwrap();
             match get_connection_records(db_pool, user, query.0).await {
-                Ok(records) => match serde_json::to_string(&records) {
-                    Ok(data) => HttpResponse::Ok().json(data),
-                    Err(_) => HttpResponse::InternalServerError().finish(),
-                },
+                Ok(records) => HttpResponse::Ok().json(records),
                 Err(e) => {
                     println!("Get records error: {:?}", e);
                     HttpResponse::InternalServerError().finish()

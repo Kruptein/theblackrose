@@ -22,10 +22,7 @@ pub async fn get_winrates(data: web::Data<AppState>, auth: BearerAuth) -> impl R
                 }
                 shit.insert(champion, champion_map);
             }
-            match serde_json::to_string(&shit) {
-                Ok(data) => HttpResponse::Ok().json(data),
-                Err(_) => HttpResponse::InternalServerError().finish(),
-            }
+            HttpResponse::Ok().json(shit)
         }
         None => HttpResponse::BadRequest().finish(),
     }

@@ -59,10 +59,7 @@ pub async fn get_matches(
         Some(user) => {
             let user = get_user_by_id(db_pool, user).await.unwrap();
             match h::get_connection_matches(db_pool, user, query.0).await {
-                Ok(matches) => match serde_json::to_string(&matches) {
-                    Ok(data) => HttpResponse::Ok().json(data),
-                    Err(_) => HttpResponse::InternalServerError().finish(),
-                },
+                Ok(matches) => HttpResponse::Ok().json(matches),
                 Err(e) => {
                     println!("Get matches error: {:?}", e);
                     HttpResponse::InternalServerError().finish()

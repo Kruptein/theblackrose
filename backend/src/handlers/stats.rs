@@ -33,12 +33,11 @@ pub async fn get_winrate_for_champion(
     let data = if queue.is_none() {
         let a = query!(
             r#"SELECT COUNT(CASE WHEN win THEN 1 END) as win, COUNT(*) as total
-        FROM participants p
-        INNER JOIN participant_stats_general ps ON ps.participant_id = p.id
-        INNER JOIN summoners s ON s.summoner_id = $1 AND p.summoner_id = s.id
+        FROM participant_stats_general ps
+        INNER JOIN summoners s ON s.summoner_id = $1 AND ps.summoner_id = s.id
         WHERE champion_id = $2"#,
             summoner_id,
-            champion.identifier(),
+            champion.0,
         )
         .fetch_one(conn)
         .await?;
@@ -48,13 +47,12 @@ pub async fn get_winrate_for_champion(
         let queue: i32 = queue.into();
         let a = query!(
             "SELECT COUNT(CASE WHEN win THEN 1 END) as win, COUNT(*) as total
-            FROM participants p
-            INNER JOIN participant_stats_general ps ON ps.participant_id = p.id
-            INNER JOIN summoners s ON s.summoner_id = $1 AND p.summoner_id = s.id
-            INNER JOIN match_references mr ON mr.game_id = p.game_id AND mr.summoner_id = s.id
+            FROM participant_stats_general ps
+            INNER JOIN summoners s ON s.summoner_id = $1 AND ps.summoner_id = s.id
+            INNER JOIN match_references mr ON mr.game_id = ps.game_id AND mr.summoner_id = s.id
             WHERE champion_id = $2 AND queue = $3",
             summoner_id,
-            champion.identifier(),
+            champion.0,
             queue
         )
         .fetch_one(conn)
@@ -82,10 +80,8 @@ pub async fn get_all_winrates(
         AllWinrate,
         r#"SELECT champion, queue, win, name
         FROM match_references mr
-        INNER JOIN participants p
-        ON mr.game_id = p.game_id AND mr.summoner_id = p.summoner_id
         INNER JOIN participant_stats_general ps
-        ON ps.participant_id = p.id
+        ON ps.game_id = mr.game_id AND ps.summoner_id = mr.summoner_id
         INNER JOIN summoners s
         ON s.id = mr.summoner_id
         WHERE mr.summoner_id = $1 AND mr.queue = 450

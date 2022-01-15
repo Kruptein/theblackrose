@@ -2,7 +2,7 @@
 import { ref, watch } from "vue";
 
 import { getChampionImage, getItemImage, getSummonerImage } from "../ddragon";
-import type { ParticipantStatsKills } from "../models/match";
+import { ParticipantStatsKda } from "../models/match";
 import type { MatchFeedElement } from "../models/matchfeed";
 import { getQueueFromId } from "../models/queue";
 import { decimalRound } from "../utils";
@@ -22,7 +22,7 @@ watch(
     },
 );
 
-const getKda = (stats: ParticipantStatsKills): number => {
+const getKda = (stats: ParticipantStatsKda): number => {
     return decimalRound((stats.kills + stats.assists) / Math.max(stats.deaths, 1));
 };
 
@@ -87,12 +87,12 @@ const toggleMatch = (event: Event): void => {
                                 ),
                         }"
                         v-for="participant of match.participants"
-                        :key="participant.participant.gameId + '-' + participant.participant.id"
+                        :key="participant.general.gameId + '-' + participant.general.summonerId"
                     >
                         <div
                             :style="{
                                 backgroundImage: `url(${getChampionImage(
-                                    participant.participant.championId,
+                                    participant.general.championId,
                                     match.matchInfo.gameVersion,
                                 )})`,
                             }"
@@ -102,51 +102,51 @@ const toggleMatch = (event: Event): void => {
                             {{ participant.summoner?.name ?? "Unknown Summoner" }}
                         </div>
                         <div class="column">
-                            {{ participant.kills.kills }}/{{ participant.kills.deaths }}/{{ participant.kills.assists }}
+                            {{ participant.kda.kills }}/{{ participant.kda.deaths }}/{{ participant.kda.assists }}
                             <br />
-                            KDA: {{ getKda(participant.kills) }}
+                            KDA: {{ getKda(participant.kda) }}
                         </div>
                         <div class="column">
-                            {{ decimalRound(participant.general.goldEarned / 1000) }}k gold
+                            {{ decimalRound(participant.progress.goldEarned / 1000) }}k gold
                             <br />
-                            {{ participant.kills.totalMinionsKilled }} cs
+                            {{ participant.kda.totalMinionsKilled }} cs
                         </div>
                         <div class="column items">
                             <img
                                 style="width: 30px; height: 30px"
-                                :src="getItemImage(participant.general.item0, match.matchInfo.gameVersion)"
+                                :src="getItemImage(participant.items.item0, match.matchInfo.gameVersion)"
                             />
                             <img
                                 style="width: 30px; height: 30px"
-                                :src="getItemImage(participant.general.item1, match.matchInfo.gameVersion)"
+                                :src="getItemImage(participant.items.item1, match.matchInfo.gameVersion)"
                             />
                             <img
                                 style="width: 30px; height: 30px"
-                                :src="getItemImage(participant.general.item2, match.matchInfo.gameVersion)"
+                                :src="getItemImage(participant.items.item2, match.matchInfo.gameVersion)"
                             />
                             <br />
                             <img
                                 style="width: 30px; height: 30px"
-                                :src="getItemImage(participant.general.item3, match.matchInfo.gameVersion)"
+                                :src="getItemImage(participant.items.item3, match.matchInfo.gameVersion)"
                             />
                             <img
                                 style="width: 30px; height: 30px"
-                                :src="getItemImage(participant.general.item4, match.matchInfo.gameVersion)"
+                                :src="getItemImage(participant.items.item4, match.matchInfo.gameVersion)"
                             />
                             <img
                                 style="width: 30px; height: 30px"
-                                :src="getItemImage(participant.general.item5, match.matchInfo.gameVersion)"
+                                :src="getItemImage(participant.items.item5, match.matchInfo.gameVersion)"
                             />
                         </div>
                         <div class="column summoners">
                             <img
                                 style="width: 30px; height: 30px"
-                                :src="getSummonerImage(participant.participant.spell1Id, match.matchInfo.gameVersion)"
+                                :src="getSummonerImage(participant.spells.summoner1Id, match.matchInfo.gameVersion)"
                             />
                             <br />
                             <img
                                 style="width: 30px; height: 30px"
-                                :src="getSummonerImage(participant.participant.spell2Id, match.matchInfo.gameVersion)"
+                                :src="getSummonerImage(participant.spells.summoner2Id, match.matchInfo.gameVersion)"
                             />
                         </div>
                     </div>
