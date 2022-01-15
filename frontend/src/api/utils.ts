@@ -1,5 +1,5 @@
+import { authClient } from "../auth/core";
 import type { MatchFeedFilter } from "../models/matchfeed";
-import { authPlugin } from "../plugins/auth0";
 
 export function backendUrl(path: string): string {
     return `${import.meta.env.VITE_BACKEND_LOCATION}${path}`;
@@ -12,7 +12,7 @@ export function backendUrl(path: string): string {
 };
 
 export async function getAuthHeader(): Promise<{ headers: { Authorization: string } }> {
-    const token: string = await authPlugin.getTokenSilently();
+    const token: string = await authClient.getTokenSilently();
     return { headers: { Authorization: `Bearer ${token}` } };
 }
 

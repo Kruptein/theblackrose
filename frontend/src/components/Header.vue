@@ -1,29 +1,32 @@
 <script setup lang="ts">
-import { inject, ref, onMounted, Ref } from "vue";
+import { ref, onMounted, Ref } from "vue";
 
 import { backendUrl, getAuthHeader } from "../api/utils";
 import { Notification } from "../models/notifications";
-import { AuthPlugin } from "../plugins/auth0";
+import { authClient, authState } from "../auth/core";
 
-const auth = inject<AuthPlugin>("Auth")!;
 const showNotifications = ref(false);
 const notifications: Ref<Notification[]> = ref([]);
 
 async function getNotifications(): Promise<void> {
-    const headers = await getAuthHeader();
-    const response = await fetch(backendUrl("/api/notifications/"), headers);
-    notifications.value = await response.json();
+    if (authState.isAuthenticated) {
+        const headers = await getAuthHeader();
+        const response = await fetch(backendUrl("/api/notifications/"), headers);
+        notifications.value = await response.json();
+    }
 }
 
 async function removeNotification(sliceId: number): Promise<void> {
-    const notificationId = notifications.value[sliceId].id;
-    const headers = await getAuthHeader();
-    const response = await fetch(backendUrl(`/api/notifications/${notificationId}/`), {
-        method: "delete",
-        ...headers,
-    });
-    if (response.status === 200) {
-        notifications.value = notifications.value.filter((n) => n.id !== notificationId);
+    if (authState.isAuthenticated) {
+        const notificationId = notifications.value[sliceId].id;
+        const headers = await getAuthHeader();
+        const response = await fetch(backendUrl(`/api/notifications/${notificationId}/`), {
+            method: "delete",
+            ...headers,
+        });
+        if (response.status === 200) {
+            notifications.value = notifications.value.filter((n) => n.id !== notificationId);
+        }
     }
 }
 
@@ -37,9 +40,9 @@ onMounted(() => {
     <div id="toppanel">
         <nav>
             <ul>
-                <template v-if="!auth.loading.value">
-                    <template v-if="!auth.isAuthenticated.value">
-                        <li><a href="#" @click="auth.loginWithRedirect">Register / Login</a></li>
+                <template v-if="!authState.loading">
+                    <template v-if="!authState.isAuthenticated">
+                        <li><a href="#" @click="authClient.loginWithRedirect()">Register / Login</a></li>
                     </template>
                     <template v-else>
                         <li
@@ -52,7 +55,7 @@ onMounted(() => {
                         <li><router-link to="/stats">Stats</router-link></li>
                         <li><router-link to="/records">Records</router-link></li>
                         <li><router-link to="/connections">Network</router-link></li>
-                        <li @click="auth.logout" :class="{ showNotifications }">
+                        <li @click="authClient.logout()" :class="{ showNotifications }">
                             <a href="#">Logout</a>
                         </li>
                     </template>
