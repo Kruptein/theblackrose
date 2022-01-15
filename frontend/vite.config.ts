@@ -8,10 +8,8 @@ export default defineConfig({
         host: "0.0.0.0",
         port: 8080,
     },
-    esbuild: {
-        minify: false,
-    },
     build: {
         minify: "esbuild",
+        target: "esnext"
     },
 });
