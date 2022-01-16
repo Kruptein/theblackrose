@@ -212,9 +212,13 @@ async fn update_matches_for_summoner(
                     let game_id: i64 = game_split.get(1).unwrap().parse().unwrap();
 
                     if let Ok(true) = has_game(db, platform_id, game_id).await {
+                        let info = get_match_info(db, game_id).await;
+                        let game_time = millis_to_chrono(info.unwrap().game_creation);
                         if last_game_time.is_none() {
-                            let info = get_match_info(db, game_id).await;
-                            last_game_time = Some(millis_to_chrono(info.unwrap().game_creation));
+                            last_game_time = Some(game_time);
+                        }
+                        if game_time.le(&begin_time) {
+                            break 'outer;
                         }
                         continue;
                     }
@@ -232,8 +236,6 @@ async fn update_matches_for_summoner(
                             }
 
                             if last_game_time.is_none() {
-                                sliding_window
-                                    .push(format!("Setting last time to {:?}", game_time));
                                 last_game_time = Some(game_time);
                             }
 

@@ -34,10 +34,7 @@ async function init() {
             const { appState } = await authClient.handleRedirectCallback();
             authState.isAuthenticated = await authClient.isAuthenticated();
 
-            console.log("NAVIGATING TO", appState.targetUrl);
-            // await router.isReady();
-            const a = await router.push(appState.targetUrl);
-            console.log(a);
+            await router.push(appState.targetUrl);
         }
     } catch (e) {
         authState.error = e;
