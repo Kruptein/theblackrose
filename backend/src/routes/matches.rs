@@ -36,12 +36,12 @@ impl MatchFilter {
         self.length.unwrap_or(10)
     }
 
-    pub fn get_queues(&self) -> Option<Vec<i32>> {
+    pub fn get_queues(&self) -> Option<Vec<i16>> {
         // todo: UPDATE DEFAULT ARRAY HERE
         self.queues.as_ref().map(|queues| {
             queues
                 .split(",")
-                .map(|queue| queue.parse::<i32>().unwrap())
+                .map(|queue| queue.parse::<i16>().unwrap())
                 .collect()
         })
     }

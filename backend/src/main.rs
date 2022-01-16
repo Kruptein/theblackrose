@@ -48,7 +48,7 @@ pub struct AppState {
     tokens: RwLock<HashMap<String, i32>>,
     update_task: Addr<GameFetchActor>,
     stats_collector: Addr<StatsCollectorActor>,
-    winrate_map: Arc<RwLock<HashMap<String, HashMap<String, HashMap<i32, ChampionWinrate>>>>>,
+    winrate_map: Arc<RwLock<HashMap<i16, HashMap<String, HashMap<i16, ChampionWinrate>>>>>,
 }
 
 fn main() -> std::io::Result<()> {

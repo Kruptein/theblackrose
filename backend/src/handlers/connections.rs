@@ -3,14 +3,14 @@ use sqlx::{query, query_as, Error, PgPool};
 use crate::{
     models::{
         connections::Connection,
-        matches::{MatchFeedElement, MatchReference},
+        matches::{MatchFeedElement, ParticipantGeneral},
         summoners::Summoner,
         users::User,
     },
     routes::matches::MatchFilter,
 };
 
-use super::matches::get_game_info;
+use super::matches::get_game_details;
 
 pub async fn add_connection(
     conn: &PgPool,
@@ -94,17 +94,18 @@ pub async fn get_connection_matches(
 
     let length: i64 = filter.get_length().into();
     let references = query_as!(
-        MatchReference,
+        ParticipantGeneral,
         r#"
-        SELECT DISTINCT ON(mr.timestamp) mr.*
-        FROM match_references mr
-        INNER JOIN summoners s ON mr.summoner_id = s.id
+        SELECT DISTINCT ON(m.game_start_timestamp) pg.*
+        FROM participant_general pg
+        INNER JOIN summoners s ON pg.summoner_id = s.id
+        INNER JOIN matches m ON m.game_id = pg.game_id
         WHERE
             s.name = any($1)
-            AND mr.queue = any($2)
-            AND mr.timestamp > $3
-            AND mr.timestamp < $4
-        ORDER BY mr.timestamp
+            AND m.queue_id = any($2)
+            AND m.game_start_timestamp > $3
+            AND m.game_end_timestamp < $4
+        ORDER BY m.game_start_timestamp
         DESC
         LIMIT $5"#,
         &user_connections,
@@ -118,7 +119,7 @@ pub async fn get_connection_matches(
 
     let mut match_collection: Vec<MatchFeedElement> = vec![];
     for reference in references {
-        match get_game_info(reference.game_id, conn).await {
+        match get_game_details(reference.game_id, conn).await {
             Ok(data) => match_collection.push(data),
             Err(err) => println!(
                 "Could not get game info for {} ({})",

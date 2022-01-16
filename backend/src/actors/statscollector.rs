@@ -12,7 +12,7 @@ use crate::handlers::{
     stats::{get_all_winrates, ChampionWinrate},
 };
 
-type WinrateMap = Arc<RwLock<HashMap<String, HashMap<String, HashMap<i32, ChampionWinrate>>>>>;
+type WinrateMap = Arc<RwLock<HashMap<i16, HashMap<String, HashMap<i16, ChampionWinrate>>>>>;
 
 pub struct StatsCollectorActor {
     pub db: PgPool,

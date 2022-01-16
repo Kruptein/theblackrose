@@ -1,14 +1,27 @@
-use sqlx::{query, query_as, Error, PgPool};
+use sqlx::{query, query_as, Error, PgPool, Postgres, Transaction};
 
 use crate::models::notifications::Notification;
 
 pub async fn send_connection_notification(
-    conn: &PgPool,
+    tx: &mut Transaction<'_, Postgres>,
     summoner_id: i32,
     title: String,
     message: String,
 ) {
-    let users: Vec<i32> = query!("SELECT u.id FROM users u INNER JOIN connections c ON c.user_id = u.id WHERE c.summoner_id = $1", summoner_id).fetch_all(conn).await.unwrap().into_iter().map(|record| record.id).collect();
+    let users: Vec<i32> = query!(
+        "
+        SELECT u.id
+        FROM users u
+        INNER JOIN connections c ON c.user_id = u.id
+        WHERE c.summoner_id = $1",
+        summoner_id
+    )
+    .fetch_all(&mut *tx)
+    .await
+    .unwrap()
+    .into_iter()
+    .map(|record| record.id)
+    .collect();
     for user_id in users.into_iter() {
         query!(
             "INSERT INTO notifications (user_id, title, message) VALUES ($1, $2, $3)",
@@ -16,7 +29,7 @@ pub async fn send_connection_notification(
             title.clone(),
             message.clone(),
         )
-        .execute(conn)
+        .execute(&mut *tx)
         .await
         .unwrap();
     }

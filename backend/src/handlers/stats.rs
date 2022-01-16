@@ -1,6 +1,9 @@
 use riven::consts::{Champion, Queue};
 use sqlx::{query, query_as, Error, PgPool};
-use std::{collections::HashMap, convert::TryFrom};
+use std::{
+    collections::HashMap,
+    convert::{TryFrom, TryInto},
+};
 
 #[derive(Debug, Serialize)]
 pub struct ChampionWinrate {
@@ -33,8 +36,8 @@ pub async fn get_winrate_for_champion(
     let data = if queue.is_none() {
         let a = query!(
             r#"SELECT COUNT(CASE WHEN win THEN 1 END) as win, COUNT(*) as total
-        FROM participant_stats_general ps
-        INNER JOIN summoners s ON s.summoner_id = $1 AND ps.summoner_id = s.id
+        FROM participant_general pg
+        INNER JOIN summoners s ON s.summoner_id = $1 AND pg.summoner_id = s.id
         WHERE champion_id = $2"#,
             summoner_id,
             champion.0,
@@ -43,14 +46,13 @@ pub async fn get_winrate_for_champion(
         .await?;
         (a.win, a.total)
     } else {
-        let queue: u16 = queue.unwrap().into();
-        let queue: i32 = queue.into();
+        let queue: i16 = u16::from(queue.unwrap()).try_into().unwrap();
         let a = query!(
             "SELECT COUNT(CASE WHEN win THEN 1 END) as win, COUNT(*) as total
-            FROM participant_stats_general ps
-            INNER JOIN summoners s ON s.summoner_id = $1 AND ps.summoner_id = s.id
-            INNER JOIN match_references mr ON mr.game_id = ps.game_id AND mr.summoner_id = s.id
-            WHERE champion_id = $2 AND queue = $3",
+            FROM participant_general pg
+            INNER JOIN summoners s ON s.summoner_id = $1 AND pg.summoner_id = s.id
+            INNER JOIN matches m ON m.game_id = pg.game_id
+            WHERE champion_id = $2 AND queue_id = $3",
             summoner_id,
             champion.0,
             queue
@@ -66,8 +68,8 @@ pub async fn get_winrate_for_champion(
 }
 
 struct AllWinrate {
-    champion: String,
-    queue: i32,
+    champion_id: i16,
+    queue_id: i16,
     win: bool,
     name: String,
 }
@@ -75,16 +77,16 @@ struct AllWinrate {
 pub async fn get_all_winrates(
     conn: &PgPool,
     summoner_id: i32,
-) -> Result<HashMap<String, HashMap<String, HashMap<i32, ChampionWinrate>>>, Error> {
+) -> Result<HashMap<i16, HashMap<String, HashMap<i16, ChampionWinrate>>>, Error> {
     let data = query_as!(
         AllWinrate,
-        r#"SELECT champion, queue, win, name
-        FROM match_references mr
-        INNER JOIN participant_stats_general ps
-        ON ps.game_id = mr.game_id AND ps.summoner_id = mr.summoner_id
+        r#"SELECT champion_id, queue_id, win, name
+        FROM participant_general pg
         INNER JOIN summoners s
-        ON s.id = mr.summoner_id
-        WHERE mr.summoner_id = $1 AND mr.queue = 450
+        ON s.id = pg.summoner_id
+        INNER JOIN matches m
+        ON m.game_id = pg.game_id
+        WHERE s.id = $1 AND m.queue_id = 450
     "#,
         summoner_id,
     )
@@ -95,10 +97,10 @@ pub async fn get_all_winrates(
     let mut collection = HashMap::new();
 
     for row in data {
-        let champion_data = collection.entry(row.champion).or_insert(HashMap::new());
+        let champion_data = collection.entry(row.champion_id).or_insert(HashMap::new());
         let summoner_data = champion_data.entry(row.name).or_insert(HashMap::new());
         let queue_data = summoner_data
-            .entry(row.queue)
+            .entry(row.queue_id)
             .or_insert(ChampionWinrate::new());
         queue_data.add(row.win);
     }

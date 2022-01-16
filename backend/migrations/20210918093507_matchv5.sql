@@ -17,6 +17,7 @@ USING CASE win WHEN 'Win' THEN TRUE ELSE FALSE END;
 ALTER TABLE matches
 ADD COLUMN game_name TEXT,
 ADD COLUMN game_start_timestamp BIGINT,
+ADD COLUMN game_end_timestamp BIGINT,
 ADD COLUMN tournament_code TEXT,
 ADD COLUMN data_version TEXT NOT NULL DEFAULT '1',
 ADD COLUMN match_id TEXT;
@@ -24,52 +25,53 @@ ADD COLUMN match_id TEXT;
 ALTER TABLE matches
 ALTER COLUMN data_version DROP DEFAULT;
 
--- STATS
-CREATE TABLE participant_stats_account (
-    game_id BIGINT REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    summoner_id INT REFERENCES summoners (id) ON UPDATE CASCADE ON DELETE CASCADE,
-    participant_id SMALLINT NOT NULL,
-    profile_icon SMALLINT,
-    puuid TEXT,
-    riot_id_name TEXT,
-    riot_id_tagline TEXT,
-    summoner_level SMALLINT,
-    summoner_name TEXT
-);
-
-INSERT INTO participant_stats_account (game_id, summoner_id, participant_id, puuid)
-SELECT p.game_id, s.id, p.participant_id, s.puuid
-FROM participants p
-INNER JOIN summoners s
-ON p.summoner_id = s.id;
-
 ALTER TABLE participant_stats_general RENAME TO old_general;
-CREATE TABLE participant_stats_general (
-    game_id BIGINT REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    summoner_id INT REFERENCES summoners (id) ON UPDATE CASCADE ON DELETE CASCADE,
-    champion_id SMALLINT,
+CREATE TABLE participant_general (
+    id SERIAL PRIMARY KEY,
+    game_id BIGINT NOT NULL REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    summoner_id INT NOT NULL REFERENCES summoners (id) ON UPDATE CASCADE ON DELETE CASCADE,
+
+    champion_id SMALLINT NOT NULL,
     champion_name TEXT NOT NULL,
     game_ended_in_early_surrender BOOL,
     game_ended_in_surrender BOOL,
     individual_position TEXT,
+    participant_id SMALLINT NOT NULL,
     team_early_surrendered BOOL,
     team_id SMALLINT NOT NULL,
     team_position TEXT,
     win BOOL NOT NULL
 );
 
-INSERT INTO participant_stats_general (game_id, summoner_id, champion_name, team_id, win)
-SELECT p.game_id, s.id, p.champion_id, p.team_id, ts.win
+INSERT INTO participant_general (game_id, summoner_id, champion_id, champion_name, team_id, win, individual_position, team_position, participant_id)
+SELECT p.game_id, s.id, -1, p.champion_id, p.team_id, ts.win, 
+CASE
+    WHEN mr.lane = 'MID_LANE' AND mr.role = 'SOLO' THEN 'MIDDLE'
+    WHEN mr.lane = 'TOP_LANE' AND mr.role = 'SOLO' THEN 'TOP'
+    WHEN mr.lane = 'JUNGLE' AND mr.role = 'NONE' THEN 'JUNGLE'
+    WHEN mr.lane = 'BOT_LANE' AND mr.role = 'DUO_CARRY' THEN 'BOTTOM'
+    WHEN mr.lane = 'BOT_LANE' AND mr.role = 'DUO_SUPPORT' THEN 'UTILITY'
+END,
+CASE
+    WHEN mr.lane = 'MID_LANE' AND mr.role = 'SOLO' THEN 'MIDDLE'
+    WHEN mr.lane = 'TOP_LANE' AND mr.role = 'SOLO' THEN 'TOP'
+    WHEN mr.lane = 'JUNGLE' AND mr.role = 'NONE' THEN 'JUNGLE'
+    WHEN mr.lane = 'BOT_LANE' AND mr.role = 'DUO_CARRY' THEN 'BOTTOM'
+    WHEN mr.lane = 'BOT_LANE' AND mr.role = 'DUO_SUPPORT' THEN 'UTILITY'
+END,
+p.participant_id
 FROM participants p
 INNER JOIN summoners s
 ON p.summoner_id = s.id
 INNER JOIN team_stats ts
-ON ts.game_id = p.game_id AND ts.team_id = p.team_id;
+ON ts.game_id = p.game_id AND ts.team_id = p.team_id
+LEFT OUTER JOIN match_references mr
+ON mr.game_id = p.game_id AND mr.summoner_id = s.id;
 
 ALTER TABLE participant_stats_damage RENAME TO old_damage;
-CREATE TABLE participant_stats_damage (
-    game_id BIGINT REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    summoner_id INT REFERENCES summoners (id) ON UPDATE CASCADE ON DELETE CASCADE,
+CREATE TABLE participant_damage (
+    id INT PRIMARY KEY REFERENCES participant_general (id) ON UPDATE CASCADE ON DELETE CASCADE,
+
     damage_dealt_to_buildings INT,
     damage_dealt_to_objectives INT,
     damage_dealt_to_turrets INT,
@@ -93,12 +95,12 @@ CREATE TABLE participant_stats_damage (
     true_damage_taken INT
 );
 
-INSERT INTO participant_stats_damage (
-    game_id, summoner_id, damage_dealt_to_objectives, damage_dealt_to_turrets, damage_self_mitigated, largest_critical_strike, magic_damage_dealt, magic_damage_dealt_to_champions,
+INSERT INTO participant_damage (
+    id, damage_dealt_to_objectives, damage_dealt_to_turrets, damage_self_mitigated, largest_critical_strike, magic_damage_dealt, magic_damage_dealt_to_champions,
     magic_damage_taken, physical_damage_dealt, physical_damage_dealt_to_champions, physical_damage_taken, total_damage_dealt, total_damage_dealt_to_champions, total_damage_taken,
     total_heal, total_units_healed, true_damage_dealt, true_damage_dealt_to_champions, true_damage_taken
 )
-SELECT p.game_id, s.id, od.damage_dealt_to_objectives, od.damage_dealt_to_turrets, od.damage_self_mitigated, od.largest_critical_strike, od.magic_damage_dealt, od.magic_damage_dealt_to_champions,
+SELECT pg.id, od.damage_dealt_to_objectives, od.damage_dealt_to_turrets, od.damage_self_mitigated, od.largest_critical_strike, od.magic_damage_dealt, od.magic_damage_dealt_to_champions,
     od.magical_damage_taken, od.physical_damage_dealt, od.physical_damage_dealt_to_champions, od.physical_damage_taken, od.total_damage_dealt, od.total_damage_dealt_to_champions, od.total_damage_taken,
     u.total_heal, u.total_units_healed, od.true_damage_dealt, od.true_damage_dealt_to_champions, od.true_damage_taken
 FROM participants p
@@ -107,11 +109,13 @@ ON p.summoner_id = s.id
 INNER JOIN old_damage od
 ON od.participant_id = p.id
 INNER JOIN participant_stats_utility u
-ON u.participant_id = p.id;
+ON u.participant_id = p.id
+INNER JOIN participant_general pg
+ON pg.game_id = p.game_id AND pg.summoner_id = s.id AND pg.participant_id = p.participant_id;
 
-CREATE TABLE participant_stats_items (
-    game_id BIGINT REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    summoner_id INT REFERENCES summoners (id) ON UPDATE CASCADE ON DELETE CASCADE,
+CREATE TABLE participant_items (
+    id INT PRIMARY KEY REFERENCES participant_general (id) ON UPDATE CASCADE ON DELETE CASCADE,
+
     consumables_purchased SMALLINT,
     detector_wards_placed SMALLINT,
     item0 SMALLINT,
@@ -123,23 +127,27 @@ CREATE TABLE participant_stats_items (
     item6 SMALLINT,
     items_purchased SMALLINT,
     sight_wards_bought_in_game SMALLINT,
-    vision_wards_bought_in_game SMALLINT
+    vision_wards_bought_in_game SMALLINT,
+    wards_placed SMALLINT
 );
 
-INSERT INTO participant_stats_items (game_id, summoner_id, item0, item1, item2, item3, item4, item5, item6, sight_wards_bought_in_game, vision_wards_bought_in_game)
-SELECT p.game_id, s.id, g.item0, g.item1, g.item2, g.item3, g.item4, g.item5, g.item6, u.sight_wards_bought_in_game, u.vision_wards_bought_in_game
+INSERT INTO participant_items (id, item0, item1, item2, item3, item4, item5, item6, sight_wards_bought_in_game, vision_wards_bought_in_game, wards_placed)
+SELECT pg.id, g.item0, g.item1, g.item2, g.item3, g.item4, g.item5, g.item6, u.sight_wards_bought_in_game, u.vision_wards_bought_in_game, u.wards_placed
 FROM participants p
 INNER JOIN summoners s
 ON p.summoner_id = s.id
 INNER JOIN old_general g
 ON g.participant_id = p.id
 INNER JOIN participant_stats_utility u
-ON u.participant_id = p.id;
+ON u.participant_id = p.id
+INNER JOIN participant_general pg
+ON pg.game_id = p.game_id AND pg.summoner_id = s.id AND pg.participant_id = p.participant_id;
 
-CREATE TABLE participant_stats_kda (
-    game_id BIGINT REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    summoner_id INT REFERENCES summoners (id) ON UPDATE CASCADE ON DELETE CASCADE,
+CREATE TABLE participant_kda (
+    id INT PRIMARY KEY REFERENCES participant_general (id) ON UPDATE CASCADE ON DELETE CASCADE,
+
     assists SMALLINT,
+    baron_kills SMALLINT,
     deaths SMALLINT,
     double_kills SMALLINT,
     dragon_kills SMALLINT,
@@ -171,12 +179,12 @@ CREATE TABLE participant_stats_kda (
     wards_killed SMALLINT
 );
 
-INSERT INTO participant_stats_kda (
-    game_id, summoner_id, assists, deaths, double_kills, first_blood_assist, first_blood_kill, first_tower_assist, first_tower_kill, inhibitor_kills,
+INSERT INTO participant_kda (
+    id, assists, deaths, double_kills, first_blood_assist, first_blood_kill, first_tower_assist, first_tower_kill, inhibitor_kills,
     killing_sprees, kills, largest_killing_spree, largest_multi_kill, neutral_minions_killed, penta_kills, quadra_kills, total_minions_killed, triple_kills,
     turret_kills, unreal_kills, wards_killed
 )
-SELECT p.game_id, s.id, k.assists, k.deaths, k.double_kills, k.first_blood_assist, k.first_blood_kill, k.first_tower_assist, k.first_tower_kill, k.inhibitor_kills,
+SELECT pg.id, k.assists, k.deaths, k.double_kills, k.first_blood_assist, k.first_blood_kill, k.first_tower_assist, k.first_tower_kill, k.inhibitor_kills,
     k.killing_sprees, k.kills, k.largest_killing_spree, k.largest_multi_kill, k.neutral_minions_killed, k.penta_kills, k.quadra_kills, k.total_minions_killed, k.triple_kills,
     k.turret_kills, k.unreal_kills, u.wards_killed
 FROM participants p
@@ -187,12 +195,14 @@ ON g.participant_id = p.id
 INNER JOIN participant_stats_kills k
 ON k.participant_id = p.id
 INNER JOIN participant_stats_utility u
-ON u.participant_id = p.id;
+ON u.participant_id = p.id
+INNER JOIN participant_general pg
+ON pg.game_id = p.game_id AND pg.summoner_id = s.id AND pg.participant_id = p.participant_id;
 
 
-CREATE TABLE participant_stats_progress (
-    game_id BIGINT REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    summoner_id INT REFERENCES summoners (id) ON UPDATE CASCADE ON DELETE CASCADE,
+CREATE TABLE participant_progress (
+    id INT PRIMARY KEY REFERENCES participant_general (id) ON UPDATE CASCADE ON DELETE CASCADE,
+
     bounty_level SMALLINT,
     champ_experience INT,
     champ_level SMALLINT,
@@ -204,12 +214,11 @@ CREATE TABLE participant_stats_progress (
     time_played SMALLINT,
     total_time_cc_dealt INT,
     total_time_spent_dead SMALLINT,
-    vision_score SMALLINT,
-    wards_placed SMALLINT
+    vision_score SMALLINT
 );
 
-INSERT INTO participant_stats_progress (game_id, summoner_id, champ_level, gold_earned, gold_spent, longest_time_spent_living, time_c_cing_others, total_time_cc_dealt, vision_score, wards_placed)
-SELECT p.game_id, s.id, g.champ_level, g.gold_earned, g.gold_spent, k.longest_time_spent_living, u.time_c_cing_others, u.total_time_crowd_control_dealt, u.vision_score, u.wards_placed
+INSERT INTO participant_progress (id, champ_level, gold_earned, gold_spent, longest_time_spent_living, time_c_cing_others, total_time_cc_dealt, vision_score)
+SELECT pg.id, g.champ_level, g.gold_earned, g.gold_spent, k.longest_time_spent_living, u.time_c_cing_others, u.total_time_crowd_control_dealt, u.vision_score
 FROM participants p
 INNER JOIN summoners s
 ON p.summoner_id = s.id
@@ -218,11 +227,13 @@ ON g.participant_id = p.id
 INNER JOIN participant_stats_kills k
 ON k.participant_id = p.id
 INNER JOIN participant_stats_utility u
-ON u.participant_id = p.id;
+ON u.participant_id = p.id
+INNER JOIN participant_general pg
+ON pg.game_id = p.game_id AND pg.summoner_id = s.id AND pg.participant_id = p.participant_id;
 
-CREATE TABLE participant_stats_spells (
-    game_id BIGINT REFERENCES matches (game_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    summoner_id INT REFERENCES summoners (id) ON UPDATE CASCADE ON DELETE CASCADE,
+CREATE TABLE participant_spells (
+    id INT PRIMARY KEY REFERENCES participant_general (id) ON UPDATE CASCADE ON DELETE CASCADE,
+
     spell1_casts SMALLINT,
     spell2_casts SMALLINT,
     spell3_casts SMALLINT,
@@ -233,11 +244,13 @@ CREATE TABLE participant_stats_spells (
     summoner2_id SMALLINT
 );
 
-INSERT INTO participant_stats_spells (game_id, summoner_id, summoner1_id, summoner2_id)
-SELECT p.game_id, s.id, p.spell1_id, p.spell2_id
+INSERT INTO participant_spells (id, summoner1_id, summoner2_id)
+SELECT pg.id, p.spell1_id, p.spell2_id
 FROM participants p
 INNER JOIN summoners s
-ON p.summoner_id = s.id;
+ON p.summoner_id = s.id
+INNER JOIN participant_general pg
+ON pg.game_id = p.game_id AND pg.summoner_id = s.id AND pg.participant_id = p.participant_id;
 
 DROP TABLE participant_stats_kills;
 DROP TABLE participant_stats_scores;
@@ -246,7 +259,7 @@ DROP TABLE old_general;
 DROP TABLE old_damage;
 
 -- Fix champion ids
-UPDATE participant_stats_general SET champion_id = CASE
+UPDATE participant_general SET champion_id = CASE
     WHEN champion_name = 'Aatrox' THEN 266
     WHEN champion_name = 'Ahri' THEN 103
     WHEN champion_name = 'Akali' THEN 84
@@ -410,8 +423,9 @@ CREATE TABLE _champions (
     name TEXT NOT NULL
 );
 
-INSERT INTO _champions (id, name) SELECT DISTINCT champion_id, champion_name FROM participant_stats_general ORDER BY champion_id;
+INSERT INTO _champions (id, name) SELECT DISTINCT champion_id, champion_name FROM participant_general ORDER BY champion_id;
 
-ALTER TABLE participant_stats_general
+ALTER TABLE participant_general
 DROP COLUMN champion_name;
 DROP TABLE participants;
+DROP TABLE match_references;

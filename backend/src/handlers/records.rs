@@ -5,7 +5,7 @@ use crate::{
     routes::records::RecordFilter,
 };
 
-use super::matches::get_game_info;
+use super::matches::get_game_details;
 
 #[derive(Serialize, Deserialize, Debug, Clone, sqlx::FromRow)]
 #[serde(rename_all(serialize = "camelCase"))]
@@ -73,7 +73,7 @@ pub async fn get_connection_records(
 
     let mut match_info_vec: Vec<MatchFeedElement> = vec![];
     for record in records.iter() {
-        match_info_vec.push(get_game_info(record.game_id, conn).await?);
+        match_info_vec.push(get_game_details(record.game_id, conn).await?);
     }
     Ok((records, match_info_vec))
 }

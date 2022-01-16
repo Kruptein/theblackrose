@@ -4,16 +4,23 @@ use actix::{prelude::*, spawn};
 use chrono::TimeZone;
 use riven::{
     consts::{PlatformRoute, RegionalRoute},
-    models::match_v5::{Info, Match},
+    models::match_v5::Match,
     RiotApi,
 };
 use sqlx::{Error, PgPool};
 use tokio::sync::Mutex;
 
 use crate::{
-    handlers::connections::get_summoner, handlers::connections::get_unique_connections,
-    handlers::matches as m, handlers::summoners as s, models::connections::Connection,
-    models::summoners::Summoner, utils::millis_to_chrono,
+    handlers::connections::get_summoner,
+    handlers::connections::get_unique_connections,
+    handlers::matches as m,
+    handlers::{
+        matches::{get_match_info, has_game},
+        summoners as s,
+    },
+    models::connections::Connection,
+    models::summoners::Summoner,
+    utils::{millis_to_chrono, SlidingWindow},
 };
 
 #[derive(Message)]
@@ -176,8 +183,10 @@ async fn update_matches_for_summoner(
     let begin_time = summoner.last_match_query_time.unwrap_or(begin_time);
     let mut begin_index = 0;
     let mut games_added = 0;
-    let mut references_added = 0;
+    // let mut references_added = 0;
     let mut last_game_time: Option<chrono::NaiveDateTime> = None;
+
+    let mut sliding_window = SlidingWindow::new();
 
     println!("Starting match update loop for {}", summoner.name);
 
@@ -197,7 +206,19 @@ async fn update_matches_for_summoner(
             .await
         {
             Ok(games) => {
-                for (index, game) in games.iter().enumerate() {
+                for game in games.iter() {
+                    let game_split = game.split("_").collect::<Vec<&str>>();
+                    let platform_id = game_split.get(0).unwrap().to_owned();
+                    let game_id: i64 = game_split.get(1).unwrap().parse().unwrap();
+
+                    if let Ok(true) = has_game(db, platform_id, game_id).await {
+                        if last_game_time.is_none() {
+                            let info = get_match_info(db, game_id).await;
+                            last_game_time = Some(millis_to_chrono(info.unwrap().game_creation));
+                        }
+                        continue;
+                    }
+
                     match api
                         .match_v5()
                         .get_match(RegionalRoute::EUROPE, game.as_str())
@@ -206,21 +227,14 @@ async fn update_matches_for_summoner(
                         Ok(Some(details)) => {
                             let game_time = millis_to_chrono(details.info.game_creation);
 
-                            // BATCH INFO PRINT
-                            if index == 0 {
-                                if last_game_time.is_none() {
-                                    last_game_time = Some(game_time);
-                                }
-                                println!(
-                                    "{:?} ({} games) [{}]",
-                                    game_time,
-                                    games.len(),
-                                    summoner.name
-                                );
-                            }
-
                             if game_time.le(&begin_time) {
                                 break 'outer;
+                            }
+
+                            if last_game_time.is_none() {
+                                sliding_window
+                                    .push(format!("Setting last time to {:?}", game_time));
+                                last_game_time = Some(game_time);
                             }
 
                             let mut lock = game_processing_lock.lock().await;
@@ -231,19 +245,17 @@ async fn update_matches_for_summoner(
                             drop(lock);
 
                             if !has_game {
-                                if add_game_details(db, &details).await {
+                                if add_game_details(db, &details, &mut sliding_window).await {
                                     games_added += 1;
                                 }
                             }
-                            // add match reference
-                            if add_match_reference(db, details.info, &summoner).await {
-                                references_added += 1;
-                            }
                         }
                         Ok(None) => {
+                            sliding_window.clear();
                             println!("MATCH NOT FOUND ({:?})", game)
                         }
                         Err(e) => {
+                            sliding_window.clear();
                             println!("MATCH RETRIEVAL FAILED ({:?})", e);
                             break;
                         }
@@ -254,54 +266,45 @@ async fn update_matches_for_summoner(
                 }
             }
             Err(e) => {
+                sliding_window.clear();
                 println!("MATCHLIST RETRIEVAL FAILED ({:?})", e);
                 break;
             }
         }
         begin_index += 100;
     }
-    if last_game_time.is_some() {
+    if last_game_time.is_some() && begin_time.lt(&last_game_time.unwrap()) {
         let summoner_id = summoner.id.clone();
 
         s::set_summoner_last_query_time(db, summoner_id, last_game_time.unwrap())
             .await
             .unwrap();
     }
+    sliding_window.clear();
     println!(
-        "Completed match update loop for {} [{}/{} games added]",
-        summoner.name, games_added, references_added
+        "Completed match update loop for {} [{} games added]",
+        summoner.name, games_added
     );
 }
 
-async fn add_game_details(db: &PgPool, details: &Match) -> bool {
+async fn add_game_details(
+    db: &PgPool,
+    details: &Match,
+    sliding_window: &mut SlidingWindow,
+) -> bool {
     let game_id = details.info.game_id;
-    match m::get_match_details(db, game_id).await {
+    match m::get_match_info(db, game_id).await {
         Ok(_) => false,
         Err(Error::RowNotFound) => {
+            let game_time = millis_to_chrono(details.info.game_creation);
+            sliding_window.push(format!("Adding game {} [{:?}]", game_id, game_time));
             m::add_match_details(db, details).await.unwrap();
-            println!("Added game {}", game_id);
+            sliding_window.replace(format!("Added game {} [{:?}]", game_id, game_time));
             true
         }
         Err(e) => {
+            sliding_window.clear();
             println!("ADD GAME DETAILS ERROR: {:?}", e);
-            false
-        }
-    }
-}
-
-async fn add_match_reference(db: &PgPool, match_reference: Info, summoner: &Summoner) -> bool {
-    let game_id = match_reference.game_id.clone();
-    match m::get_match_reference(db, game_id, summoner.id).await {
-        Ok(_) => false,
-        Err(Error::RowNotFound) => {
-            m::add_match_reference(db, match_reference, summoner)
-                .await
-                .unwrap();
-            println!("Added match reference {} for {}", game_id, summoner.id);
-            true
-        }
-        Err(e) => {
-            println!("ADD MATCH REFERENCE ERROR: {:?}", e);
             false
         }
     }
