@@ -290,7 +290,7 @@ async fn add_participant_stats(
         total_heal, total_heals_on_teammates, total_units_healed, true_damage_dealt, true_damage_dealt_to_champions, true_damage_taken
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)",
     pg.id,
-    stats.damage_dealt_to_buildings.unwrap(),
+    stats.damage_dealt_to_buildings.unwrap_or(0),
     stats.damage_dealt_to_objectives,
     stats.damage_dealt_to_turrets,
     stats.damage_self_mitigated,
