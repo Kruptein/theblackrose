@@ -15,21 +15,6 @@ use crate::models::{
 
 use super::{notifications::send_connection_notification, summoners::get_or_add_partial_summoner};
 
-// pub async fn get_match_reference(
-//     conn: &PgPool,
-//     game_id: i64,
-//     summoner_id: i32,
-// ) -> Result<MatchReference, Error> {
-//     query_as!(
-//         MatchReference,
-//         "SELECT * FROM match_references WHERE game_id = $1 AND summoner_id = $2",
-//         game_id,
-//         summoner_id
-//     )
-//     .fetch_one(conn)
-//     .await
-// }
-
 pub async fn has_game(
     conn: &PgPool,
     platform_id: &str, game_id: i64
@@ -78,31 +63,6 @@ pub async fn get_game_details(game_id: i64, conn: &PgPool) -> Result<MatchFeedEl
         participants,
     })
 }
-
-// MATCH DB INSERT FUNCTIONS
-
-// pub async fn add_match_reference(
-//     conn: &PgPool,
-//     info: R::Info,
-//     summoner: &Summoner,
-// ) -> Result<MatchReference, Error> {
-//     let queue: i32 = u16::from(info.queue_id).into();
-//     let puuid = summoner.puuid.as_ref().unwrap();
-//     let participant = info.participants.into_iter().find(|p| &p.puuid == puuid).unwrap();
-//     query_as!(MatchReference, "
-//         INSERT INTO match_references (
-//             game_id, summoner_id, role, platform_id, champion, lane, queue, timestamp
-//         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
-//         info.game_id,
-//         summoner.id,
-//         participant.role,
-//         info.platform_id,
-//         participant.champion().unwrap().identifier(),
-//         participant.lane,
-//         queue,
-//         info.game_start_timestamp
-//     ).fetch_one(conn).await
-// }
 
 pub async fn get_match_info(conn: &PgPool, game_id: i64) -> Result<Match, Error> {
     query_as!(Match, "SELECT * FROM matches WHERE game_id = $1", game_id)
@@ -243,16 +203,6 @@ async fn add_participant_stats(
     queue_id: u16,
     season_id: i16,
 ) {
-    // let profile_icon: i16 = stats.profile_icon.try_into().unwrap();
-    // let summoner_level: i16 = stats.summoner_level.try_into().unwrap();
-
-    // query!("INSERT INTO participant_account (
-    //     game_id, summoner_id, participant_id, profile_icon, puuid, riot_id_name, riot_id_tagline, summoner_level, summoner_name)
-    //     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-    //     game_id, summoner_id, participant_id, profile_icon, stats.puuid, stats.riot_id_name,
-    //     stats.riot_id_tagline, summoner_level, stats.summoner_name
-    // ).execute(conn).await.unwrap();
-
     let champion_id: i16 = stats.champion().unwrap().0;
     let participant_id: i16 = stats.participant_id.try_into().unwrap();
     let team_id: i16 = i32::from(u16::from(stats.team_id)).try_into().unwrap();

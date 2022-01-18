@@ -92,7 +92,6 @@ pub async fn get_all_winrates(
     )
     .fetch_all(conn)
     .await?;
-    // let data: Vec<(String, i32, bool)> = a;
 
     let mut collection = HashMap::new();
 
