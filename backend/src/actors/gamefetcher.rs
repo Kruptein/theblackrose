@@ -2,11 +2,7 @@ use std::{collections::HashSet, env, sync::Arc, time::Duration};
 
 use actix::{prelude::*, spawn};
 use chrono::TimeZone;
-use riven::{
-    consts::{PlatformRoute, RegionalRoute},
-    models::match_v5::Match,
-    RiotApi,
-};
+use riven::{consts::RegionalRoute, models::match_v5::Match, RiotApi};
 use sqlx::{Error, PgPool};
 use tokio::sync::Mutex;
 
@@ -20,6 +16,7 @@ use crate::{
     },
     models::connections::Connection,
     models::summoners::Summoner,
+    rito::summoners::update_summoner,
     utils::{millis_to_chrono, SlidingWindow},
 };
 
@@ -91,7 +88,9 @@ impl Handler<SummonerUpdateMessage> for GameFetchActor {
         let db = self.db.clone();
         let api = self.riot_api.clone();
         let game_processing_lock = self.game_processing_lock.clone();
-        spawn(async { update_summoner(db, msg.summoner, api, game_processing_lock).await });
+        spawn(async {
+            update_summoner_with_lock(db, msg.summoner, api, game_processing_lock).await
+        });
     }
 }
 
@@ -126,12 +125,12 @@ async fn update_connection(
     match summoner.update_in_progress {
         true => (),
         false => {
-            update_summoner(db, summoner, api, game_processing_lock).await;
+            update_summoner_with_lock(db, summoner, api, game_processing_lock).await;
         }
     }
 }
 
-async fn update_summoner(
+async fn update_summoner_with_lock(
     db: PgPool,
     summoner: Summoner,
     api: Arc<RiotApi>,
@@ -139,7 +138,7 @@ async fn update_summoner(
 ) {
     let summoner_id = summoner.id;
     set_summoner_state(&db, summoner_id, true).await;
-    update_summoner_table(&db, &api, &summoner).await;
+    update_summoner(&api, &db, &summoner).await.unwrap();
     update_matches_for_summoner(&db, &api, &game_processing_lock, summoner).await;
     set_summoner_state(&db, summoner_id, false).await;
 }
@@ -148,29 +147,6 @@ async fn set_summoner_state(db: &PgPool, summoner: i32, state: bool) {
     s::set_summoner_update_state(db, summoner, state)
         .await
         .unwrap();
-}
-
-async fn update_summoner_table(db: &PgPool, api: &RiotApi, summoner: &Summoner) {
-    let summoner_id = summoner.id;
-    let account_id = &summoner.account_id;
-    if account_id.is_none() {
-        println!("Summoner with unknown account_id found: {}", summoner.name);
-        return;
-    }
-    let account_id = account_id.as_ref().unwrap();
-    match api
-        .summoner_v4()
-        .get_by_account_id(PlatformRoute::EUW1, account_id.as_str())
-        .await
-    {
-        Ok(summoner) => {
-            s::update_summoner(db, summoner_id, summoner).await.unwrap();
-        }
-        Err(_) => println!(
-            "Could not update summoner data for account id: {} (username: {})",
-            account_id, summoner.name
-        ),
-    }
 }
 
 async fn update_matches_for_summoner(
