@@ -152,7 +152,7 @@ pub async fn get_summoner_quick_stats(
             pg.summoner_id = $1
         "#,
         summoner.id,
-        1641524400000 // season 11 start day
+        1641524400000 // season 12 start day
     )
     .fetch_one(conn)
     .await

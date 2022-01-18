@@ -18,17 +18,6 @@ pub struct MatchFeedElement {
     pub participants: Vec<MatchFeedParticipant>,
 }
 
-pub struct MatchReference {
-    pub game_id: i64,
-    pub summoner_id: i32,
-    pub role: Option<String>,
-    pub platform_id: String,
-    pub champion: String,
-    pub queue: i32,
-    pub lane: Option<String>,
-    pub timestamp: i64,
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all(serialize = "camelCase"))]
 pub struct Match {
@@ -68,21 +57,6 @@ pub struct TeamStats {
     pub first_rift_herald: bool,
     pub win: bool,
 }
-
-// #[derive(Debug, Deserialize, Serialize)]
-// #[serde(rename_all(serialize = "camelCase"))]
-// pub struct ParticipantAccount {
-//     pub game_id: i64,
-//     pub summoner_id: i32,
-
-//     pub participant_id: i16,
-//     pub profile_icon: Option<i16>,
-//     pub puuid: Option<String>,
-//     pub riot_id_name: Option<String>,
-//     pub riot_id_tagline: Option<String>,
-//     pub summoner_level: Option<i16>,
-//     pub summoner_name: Option<String>,
-// }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all(serialize = "camelCase"))]
@@ -227,93 +201,6 @@ pub struct ParticipantSpells {
     pub summoner1_id: Option<i16>,
     pub summoner2_casts: Option<i16>,
     pub summoner2_id: Option<i16>,
-}
-
-impl ::sqlx::encode::Encode<'_, ::sqlx::Postgres> for MatchReference
-where
-    i64: for<'q> ::sqlx::encode::Encode<'q, ::sqlx::Postgres>,
-    i64: ::sqlx::types::Type<::sqlx::Postgres>,
-    i32: for<'q> ::sqlx::encode::Encode<'q, ::sqlx::Postgres>,
-    i32: ::sqlx::types::Type<::sqlx::Postgres>,
-    Option<String>: for<'q> ::sqlx::encode::Encode<'q, ::sqlx::Postgres>,
-    Option<String>: ::sqlx::types::Type<::sqlx::Postgres>,
-    String: for<'q> ::sqlx::encode::Encode<'q, ::sqlx::Postgres>,
-    String: ::sqlx::types::Type<::sqlx::Postgres>,
-    String: for<'q> ::sqlx::encode::Encode<'q, ::sqlx::Postgres>,
-    String: ::sqlx::types::Type<::sqlx::Postgres>,
-    i32: for<'q> ::sqlx::encode::Encode<'q, ::sqlx::Postgres>,
-    i32: ::sqlx::types::Type<::sqlx::Postgres>,
-    Option<String>: for<'q> ::sqlx::encode::Encode<'q, ::sqlx::Postgres>,
-    Option<String>: ::sqlx::types::Type<::sqlx::Postgres>,
-    i64: for<'q> ::sqlx::encode::Encode<'q, ::sqlx::Postgres>,
-    i64: ::sqlx::types::Type<::sqlx::Postgres>,
-{
-    fn encode_by_ref(
-        &self,
-        buf: &mut ::sqlx::postgres::PgArgumentBuffer,
-    ) -> ::sqlx::encode::IsNull {
-        let mut encoder = ::sqlx::postgres::types::PgRecordEncoder::new(buf);
-        encoder.encode(&self.game_id);
-        encoder.encode(&self.summoner_id);
-        encoder.encode(&self.role);
-        encoder.encode(&self.platform_id);
-        encoder.encode(&self.champion);
-        encoder.encode(&self.queue);
-        encoder.encode(&self.lane);
-        encoder.encode(&self.timestamp);
-        encoder.finish();
-        ::sqlx::encode::IsNull::No
-    }
-    fn size_hint(&self) -> ::std::primitive::usize {
-        8usize * (4 + 4)
-            + <i64 as ::sqlx::encode::Encode<::sqlx::Postgres>>::size_hint(&self.game_id)
-            + <i32 as ::sqlx::encode::Encode<::sqlx::Postgres>>::size_hint(&self.summoner_id)
-            + <Option<String> as ::sqlx::encode::Encode<::sqlx::Postgres>>::size_hint(&self.role)
-            + <String as ::sqlx::encode::Encode<::sqlx::Postgres>>::size_hint(&self.platform_id)
-            + <String as ::sqlx::encode::Encode<::sqlx::Postgres>>::size_hint(&self.champion)
-            + <i32 as ::sqlx::encode::Encode<::sqlx::Postgres>>::size_hint(&self.queue)
-            + <Option<String> as ::sqlx::encode::Encode<::sqlx::Postgres>>::size_hint(&self.lane)
-            + <i64 as ::sqlx::encode::Encode<::sqlx::Postgres>>::size_hint(&self.timestamp)
-    }
-}
-impl<'r> ::sqlx::decode::Decode<'r, ::sqlx::Postgres> for MatchReference
-where
-    i64: ::sqlx::decode::Decode<'r, ::sqlx::Postgres>,
-    i64: ::sqlx::types::Type<::sqlx::Postgres>,
-    i32: ::sqlx::decode::Decode<'r, ::sqlx::Postgres>,
-    i32: ::sqlx::types::Type<::sqlx::Postgres>,
-    Option<String>: ::sqlx::decode::Decode<'r, ::sqlx::Postgres>,
-    Option<String>: ::sqlx::types::Type<::sqlx::Postgres>,
-    String: ::sqlx::types::Type<::sqlx::Postgres>,
-{
-    fn decode(
-        value: ::sqlx::postgres::PgValueRef<'r>,
-    ) -> ::std::result::Result<
-        Self,
-        ::std::boxed::Box<
-            dyn ::std::error::Error + 'static + ::std::marker::Send + ::std::marker::Sync,
-        >,
-    > {
-        let mut decoder = ::sqlx::postgres::types::PgRecordDecoder::new(value)?;
-        let game_id = decoder.try_decode::<i64>()?;
-        let summoner_id = decoder.try_decode::<i32>()?;
-        let role = decoder.try_decode::<Option<String>>()?;
-        let platform_id = decoder.try_decode::<String>()?;
-        let champion = decoder.try_decode::<String>()?;
-        let queue = decoder.try_decode::<i32>()?;
-        let lane = decoder.try_decode::<Option<String>>()?;
-        let timestamp = decoder.try_decode::<i64>()?;
-        ::std::result::Result::Ok(MatchReference {
-            game_id,
-            summoner_id,
-            role,
-            platform_id,
-            champion,
-            queue,
-            lane,
-            timestamp,
-        })
-    }
 }
 
 impl<'r> ::sqlx::decode::Decode<'r, ::sqlx::Postgres> for ParticipantGeneral

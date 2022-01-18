@@ -1,4 +1,3 @@
-pub mod champions;
 pub mod connections;
 pub mod matches;
 pub mod notifications;

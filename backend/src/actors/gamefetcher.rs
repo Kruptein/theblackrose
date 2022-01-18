@@ -159,7 +159,7 @@ async fn update_matches_for_summoner(
     let begin_time = summoner.last_match_query_time.unwrap_or(begin_time);
     let mut begin_index = 0;
     let mut games_added = 0;
-    // let mut references_added = 0;
+
     let mut last_game_time: Option<chrono::NaiveDateTime> = None;
 
     let mut sliding_window = SlidingWindow::new();
