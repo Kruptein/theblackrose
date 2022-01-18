@@ -467,9 +467,9 @@ query!("
     let spell3_casts: i16 = stats.spell3_casts.try_into().unwrap();
     let spell4_casts: i16 = stats.spell4_casts.try_into().unwrap();
     let summoner1_casts: i16 = stats.summoner1_casts.try_into().unwrap();
-    let summoner1_id: i16 = stats.summoner1_id.try_into().unwrap();
+    let summoner1_id: i16 = stats.summoner1_id.try_into().unwrap_or(-1);
     let summoner2_casts: i16 = stats.summoner2_casts.try_into().unwrap();
-    let summoner2_id: i16 = stats.summoner2_id.try_into().unwrap();
+    let summoner2_id: i16 = stats.summoner2_id.try_into().unwrap_or(-1);
 
     query!("
     INSERT INTO participant_spells (
