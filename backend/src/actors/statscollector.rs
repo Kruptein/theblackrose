@@ -7,9 +7,9 @@ use actix::{spawn, Actor, Context};
 use sqlx::PgPool;
 use tokio::sync::{Mutex, RwLock};
 
-use crate::handlers::{
-    connections::get_unique_connections,
-    stats::{get_all_winrates, ChampionWinrate},
+use crate::{
+    db::connections::get_unique_connections,
+    handlers::stats::{get_all_winrates, ChampionWinrate},
 };
 
 type WinrateMap = Arc<RwLock<HashMap<i16, HashMap<String, HashMap<i16, ChampionWinrate>>>>>;

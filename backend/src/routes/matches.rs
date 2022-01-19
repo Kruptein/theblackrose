@@ -2,8 +2,8 @@ use actix_web::{get, web, HttpResponse, Responder};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 
 use crate::{
-    auth::helpers::get_user_from_cache, handlers::connections as h,
-    handlers::users::get_user_by_id, AppState,
+    auth::helpers::get_user_from_cache, db::users::get_user_by_id, handlers::connections as h,
+    AppState,
 };
 
 // Ideally we would just be able to use Option<Vec<String>> here,

@@ -1,7 +1,7 @@
 use actix_web::{get, web, HttpResponse, Responder};
 
 use crate::{
-    handlers::summoners::{get_summoner_quick_stats, QuickStats},
+    db::summoners::{get_summoner_quick_stats, QuickStats},
     models::summoners::Summoner,
     rito::summoners::get_summoner_by_name,
     AppState,

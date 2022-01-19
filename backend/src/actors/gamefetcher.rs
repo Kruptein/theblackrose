@@ -7,13 +7,12 @@ use sqlx::{Error, PgPool};
 use tokio::sync::Mutex;
 
 use crate::{
-    handlers::connections::get_summoner,
-    handlers::connections::get_unique_connections,
-    handlers::matches as m,
-    handlers::{
-        matches::{get_match_info, has_game},
-        summoners as s,
+    db::{
+        connections::get_unique_connections,
+        matches::{get_match, has_game},
+        summoners as s_db,
     },
+    handlers::matches as m,
     models::connections::Connection,
     models::summoners::Summoner,
     rito::summoners::update_summoner,
@@ -60,7 +59,9 @@ impl Actor for GameFetchActor {
 }
 
 async fn unlock_all_summoners(db: PgPool) {
-    s::set_all_summoners_update_state(&db, false).await.unwrap();
+    s_db::set_all_summoners_update_state(&db, false)
+        .await
+        .unwrap();
 }
 
 fn update_closure(actor: &mut GameFetchActor, _: &mut Context<GameFetchActor>) {
@@ -121,7 +122,9 @@ async fn update_connection(
     game_processing_lock: Arc<Mutex<HashSet<i64>>>,
     connection: Connection,
 ) {
-    let summoner = get_summoner(&db, connection).await.unwrap();
+    let summoner = s_db::get_summoner(&db, connection.summoner_id)
+        .await
+        .unwrap();
     match summoner.update_in_progress {
         true => (),
         false => {
@@ -144,7 +147,7 @@ async fn update_summoner_with_lock(
 }
 
 async fn set_summoner_state(db: &PgPool, summoner: i32, state: bool) {
-    s::set_summoner_update_state(db, summoner, state)
+    s_db::set_summoner_update_state(db, summoner, state)
         .await
         .unwrap();
 }
@@ -188,7 +191,7 @@ async fn update_matches_for_summoner(
                     let game_id: i64 = game_split.get(1).unwrap().parse().unwrap();
 
                     if let Ok(true) = has_game(db, platform_id, game_id).await {
-                        let info = get_match_info(db, game_id).await;
+                        let info = get_match(db, game_id).await;
                         let game_time = millis_to_chrono(info.unwrap().game_creation);
                         if last_game_time.is_none() {
                             last_game_time = Some(game_time);
@@ -254,7 +257,7 @@ async fn update_matches_for_summoner(
     if last_game_time.is_some() && begin_time.lt(&last_game_time.unwrap()) {
         let summoner_id = summoner.id.clone();
 
-        s::set_summoner_last_query_time(db, summoner_id, last_game_time.unwrap())
+        s_db::set_summoner_last_query_time(db, summoner_id, last_game_time.unwrap())
             .await
             .unwrap();
     }
@@ -271,7 +274,7 @@ async fn add_game_details(
     sliding_window: &mut SlidingWindow,
 ) -> bool {
     let game_id = details.info.game_id;
-    match m::get_match_info(db, game_id).await {
+    match get_match(db, game_id).await {
         Ok(_) => false,
         Err(Error::RowNotFound) => {
             let game_time = millis_to_chrono(details.info.game_creation);

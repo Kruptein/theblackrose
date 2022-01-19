@@ -1,5 +1,3 @@
-use jsonwebtoken::Algorithm;
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Claims {
     pub sub: String,
@@ -21,8 +19,8 @@ pub struct Jwks {
 
 #[derive(Debug, Deserialize)]
 pub struct JwtHeader {
-    alg: Algorithm,
-    typ: String,
+    // alg: Algorithm,
+    // typ: String,
     pub kid: String,
 }
 

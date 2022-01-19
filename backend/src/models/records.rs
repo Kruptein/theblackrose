@@ -32,3 +32,14 @@ pub struct Record {
     pub record_type: i16,
     pub value: f32,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all(serialize = "camelCase"))]
+pub struct ApiRecord {
+    pub id: i32,
+    pub record_type: i16,
+    pub value: f32,
+    pub game_id: i64,
+    pub name: String,
+    pub queue_id: i16,
+}

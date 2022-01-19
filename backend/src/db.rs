@@ -1,3 +1,11 @@
+pub mod connections;
+pub mod matches;
+pub mod notifications;
+pub mod records;
+pub mod stats;
+pub mod summoners;
+pub mod users;
+
 use std::env;
 
 use sqlx::PgPool;

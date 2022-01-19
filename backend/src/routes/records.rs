@@ -2,9 +2,8 @@ use actix_web::{get, web, HttpResponse, Responder};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 
 use crate::{
-    auth::helpers::get_user_from_cache,
-    handlers::{records::get_connection_records, users::get_user_by_id},
-    AppState,
+    auth::helpers::get_user_from_cache, db::users::get_user_by_id,
+    handlers::records::get_connection_records, AppState,
 };
 
 #[derive(Debug, Deserialize)]
@@ -20,9 +19,14 @@ impl RecordFilter {
             .map(|names| names.split(",").map(|name| name.to_owned()).collect())
     }
 
-    pub fn get_queues(&self) -> Option<&String> {
-        // todo: UPDATE DEFAULT ARRAY HERE
-        self.queues.as_ref()
+    pub fn get_queue_ids(&self) -> Vec<i16> {
+        let ids = self.queues.as_ref().map(|q| {
+            q.split(",")
+                .filter_map(|s| s.parse::<i16>().ok())
+                .collect::<Vec<i16>>()
+        });
+
+        ids.unwrap_or_else(|| vec![450])
     }
 }
 

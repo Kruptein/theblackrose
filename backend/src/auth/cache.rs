@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use sqlx::PgPool;
 use tokio::sync::RwLock;
 
-use crate::handlers::users::{add_user, get_user_by_subj};
+use crate::db::users::{add_user, get_user_by_subj};
 
 use super::auth0::get_user_info;
 

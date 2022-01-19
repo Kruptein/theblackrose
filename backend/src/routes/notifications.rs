@@ -1,7 +1,7 @@
 use actix_web::{delete, get, web, HttpResponse, Responder};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 
-use crate::{auth::helpers::get_user_from_cache, handlers::notifications as n, AppState};
+use crate::{auth::helpers::get_user_from_cache, db::notifications as n, AppState};
 
 #[get("/notifications/")]
 pub async fn get_notifications(data: web::Data<AppState>, auth: BearerAuth) -> impl Responder {

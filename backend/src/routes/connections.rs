@@ -4,8 +4,8 @@ use actix_web_httpauth::extractors::bearer::BearerAuth;
 use crate::{
     actors::gamefetcher::{ConnectionUpdateMessage, SummonerUpdateMessage},
     auth::helpers::get_user_from_cache,
-    handlers::connections as h,
-    handlers::users::get_user_by_id,
+    db::connections as db,
+    db::users::get_user_by_id,
     rito::summoners::get_summoner_by_name,
     AppState,
 };
@@ -17,7 +17,7 @@ pub async fn get_connections(data: web::Data<AppState>, auth: BearerAuth) -> imp
     match get_user_from_cache(&data.tokens, auth.token()).await {
         Some(user) => {
             let user = get_user_by_id(&db_pool, user).await.unwrap();
-            match h::get_connection_short_info(&db_pool, user).await {
+            match db::get_connection_short_info(&db_pool, user).await {
                 Ok(connections) => HttpResponse::Ok().json(&connections),
                 Err(_) => HttpResponse::Ok().finish(),
             }
@@ -40,7 +40,7 @@ pub async fn add_connection(
         Some(user) => {
             let user = get_user_by_id(db_pool, user).await.unwrap();
             match get_summoner_by_name(riot_api, db_pool, username.as_str()).await {
-                Some(summoner) => match h::add_connection(db_pool, user, summoner).await {
+                Some(summoner) => match db::add_connection(db_pool, user, summoner).await {
                     Ok(connection) => {
                         data.update_task
                             .send(ConnectionUpdateMessage { connection })

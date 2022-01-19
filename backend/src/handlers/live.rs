@@ -1,7 +1,7 @@
 use riven::{consts::Champion, models::spectator_v4::CurrentGameInfo};
 use sqlx::{Error, PgPool};
 
-use super::stats::get_winrate_for_champion;
+use crate::db::stats::get_winrate_for_champion;
 
 #[derive(Debug, Serialize)]
 pub struct ParticipantLiveInfo {

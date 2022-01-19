@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use actix_web::{get, web, HttpResponse, Responder};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 
-use crate::{auth::helpers::get_user_from_cache, handlers::connections::get_connections, AppState};
+use crate::{auth::helpers::get_user_from_cache, db::connections::get_connections, AppState};
 
 #[get("/stats/winrates/")]
 pub async fn get_winrates(data: web::Data<AppState>, auth: BearerAuth) -> impl Responder {

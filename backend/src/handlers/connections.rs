@@ -1,76 +1,13 @@
-use sqlx::{query, query_as, Error, PgPool};
+use sqlx::{Error, PgPool};
 
 use crate::{
-    models::{
-        connections::Connection,
-        matches::{MatchFeedElement, ParticipantGeneral},
-        summoners::Summoner,
-        users::User,
+    db::{
+        connections::get_connection_names,
+        matches::{get_game_details, get_match_ids},
     },
+    models::{matches::MatchFeedElement, users::User},
     routes::matches::MatchFilter,
 };
-
-use super::matches::get_game_details;
-
-pub async fn add_connection(
-    conn: &PgPool,
-    user: User,
-    summoner: Summoner,
-) -> Result<Connection, Error> {
-    query_as!(
-        Connection,
-        "INSERT INTO connections (user_id, summoner_id) VALUES ($1, $2) RETURNING *",
-        user.id,
-        summoner.id
-    )
-    .fetch_one(conn)
-    .await
-}
-
-pub async fn get_unique_connections(conn: &PgPool) -> Result<Vec<Connection>, Error> {
-    query_as!(
-        Connection,
-        "SELECT DISTINCT ON(summoner_id) * FROM connections"
-    )
-    .fetch_all(conn)
-    .await
-}
-
-pub async fn get_summoner(conn: &PgPool, connection: Connection) -> Result<Summoner, Error> {
-    query_as!(
-        Summoner,
-        "SELECT * FROM summoners WHERE id = $1",
-        connection.summoner_id
-    )
-    .fetch_one(conn)
-    .await
-}
-
-#[derive(Serialize)]
-#[serde(rename_all(serialize = "camelCase"))]
-pub struct ConnectionShortInfo {
-    name: String,
-    profile_icon_id: i32,
-}
-
-pub async fn get_connection_short_info(
-    conn: &PgPool,
-    user: User,
-) -> Result<Vec<ConnectionShortInfo>, Error> {
-    sqlx::query_as!(ConnectionShortInfo, "SELECT name, profile_icon_id FROM connections c INNER JOIN summoners s ON c.summoner_id = s.id WHERE c.user_id = $1", user.id)
-        .fetch_all(conn)
-        .await
-}
-
-pub async fn get_connections(conn: &PgPool, user_id: i32) -> Result<Vec<Summoner>, Error> {
-    sqlx::query_as!(
-        Summoner,
-        "SELECT s.* FROM connections c INNER JOIN summoners s ON c.summoner_id = s.id WHERE c.user_id = $1",
-        user_id
-    )
-    .fetch_all(conn)
-    .await
-}
 
 pub async fn get_connection_matches(
     conn: &PgPool,
@@ -79,9 +16,7 @@ pub async fn get_connection_matches(
 ) -> Result<Vec<MatchFeedElement>, Error> {
     let user_connections = match filter.get_names() {
         Some(names) => names.to_owned(),
-        None => {
-            query!("SELECT s.name FROM summoners s INNER JOIN connections c ON c.summoner_id = s.id WHERE c.user_id = $1", user.id).fetch_all(conn).await?.into_iter().map(|record| record.name).collect()
-        }
+        None => get_connection_names(conn, user.id).await?,
     };
     let after_time = match filter.get_after_time() {
         Some(s) => s.to_owned(),
@@ -93,28 +28,14 @@ pub async fn get_connection_matches(
     };
 
     let length: i64 = filter.get_length().into();
-    let references = query_as!(
-        ParticipantGeneral,
-        r#"
-        SELECT DISTINCT ON(m.game_start_timestamp) pg.*
-        FROM participant_general pg
-        INNER JOIN summoners s ON pg.summoner_id = s.id
-        INNER JOIN matches m ON m.game_id = pg.game_id
-        WHERE
-            s.name = any($1)
-            AND m.queue_id = any($2)
-            AND m.game_start_timestamp > $3
-            AND m.game_end_timestamp < $4
-        ORDER BY m.game_start_timestamp
-        DESC
-        LIMIT $5"#,
-        &user_connections,
-        &filter.get_queues().unwrap_or(vec![450]),
-        after_time,
+    let references = get_match_ids(
+        conn,
+        user_connections,
+        filter.get_queues().unwrap_or(vec![450]),
         before_time,
-        length
+        after_time,
+        length,
     )
-    .fetch_all(conn)
     .await?;
 
     let mut match_collection: Vec<MatchFeedElement> = vec![];
