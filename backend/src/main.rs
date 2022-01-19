@@ -104,7 +104,7 @@ fn main() -> std::io::Result<()> {
                 .wrap(Cors::permissive())
                 .service(fs::Files::new("/ddragon", "../ddragon").show_files_listing())
                 .service(
-                    scope("/api/")
+                    scope("/api")
                         .wrap(auth)
                         .wrap(Cors::permissive())
                         .service(add_connection)
