@@ -234,8 +234,9 @@ async fn update_matches_for_summoner(
                             }
                         }
                         Ok(None) => {
-                            sliding_window.clear();
-                            println!("MATCH NOT FOUND ({:?})", game)
+                            // sliding_window.clear();
+                            // usually custom games
+                            // println!("MATCH NOT FOUND ({:?})", game)
                         }
                         Err(e) => {
                             sliding_window.clear();
