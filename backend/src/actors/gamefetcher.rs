@@ -169,7 +169,7 @@ async fn update_matches_for_summoner(
 
     println!("Starting match update loop for {}", summoner.name);
 
-    'outer: loop {
+    loop {
         match api
             .match_v5()
             .get_match_ids_by_puuid(
@@ -185,6 +185,8 @@ async fn update_matches_for_summoner(
             .await
         {
             Ok(games) => {
+                let mut next_page_needed = false;
+
                 for game in games.iter() {
                     let game_split = game.split("_").collect::<Vec<&str>>();
                     let platform_id = game_split.get(0).unwrap().to_owned();
@@ -197,7 +199,7 @@ async fn update_matches_for_summoner(
                             last_game_time = Some(game_time);
                         }
                         if game_time.le(&begin_time) {
-                            break 'outer;
+                            next_page_needed = true;
                         }
                         continue;
                     }
@@ -211,7 +213,7 @@ async fn update_matches_for_summoner(
                             let game_time = millis_to_chrono(details.info.game_creation);
 
                             if game_time.le(&begin_time) {
-                                break 'outer;
+                                next_page_needed = true;
                             }
 
                             if last_game_time.is_none() {
@@ -242,7 +244,8 @@ async fn update_matches_for_summoner(
                         }
                     }
                 }
-                if games.len() < 100 {
+
+                if games.len() < 100 || !next_page_needed {
                     break;
                 }
             }

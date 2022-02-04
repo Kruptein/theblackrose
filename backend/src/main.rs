@@ -47,7 +47,7 @@ pub struct AppState {
     riot_api: Arc<RiotApi>,
     tokens: RwLock<HashMap<String, i32>>,
     update_task: Addr<GameFetchActor>,
-    stats_collector: Addr<StatsCollectorActor>,
+    // stats_collector: Addr<StatsCollectorActor>,
     winrate_map: Arc<RwLock<HashMap<i16, HashMap<String, HashMap<i16, ChampionWinrate>>>>>,
 }
 
@@ -87,7 +87,7 @@ fn main() -> std::io::Result<()> {
             db_conn: pool.clone(),
             tokens: RwLock::new(HashMap::new()),
             update_task: game_fetcher.clone(),
-            stats_collector,
+            // stats_collector,
             winrate_map,
         });
 
