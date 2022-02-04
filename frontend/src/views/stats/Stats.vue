@@ -37,7 +37,7 @@ onMounted(async () => {
                     v-for="(data, summoner) in winrates[getChampionId(champion)]"
                     class="summoner"
                     :style="{
-                        left: `${decimalRound((500 * data[450].wins) / data[450].total)}px`,
+                        left: `${decimalRound((1000 * data[450].wins) / data[450].total)}px`,
                         display: data[450].total < mingames ? 'none' : '',
                     }"
                     :title="`${summoner} [${data[450].wins}/${data[450].total}]`"
@@ -65,6 +65,10 @@ onMounted(async () => {
     .data {
         position: relative;
     }
+
+    &:last-child {
+        padding-bottom: 100px;
+    }
 }
 
 .name {
@@ -74,7 +78,7 @@ onMounted(async () => {
 
 .line {
     height: 15px;
-    width: 500px;
+    width: 1000px;
     background: rgb(255, 0, 0);
     background: linear-gradient(90deg, rgba(255, 0, 0, 1) 0%, rgba(0, 255, 0, 1) 100%);
 }

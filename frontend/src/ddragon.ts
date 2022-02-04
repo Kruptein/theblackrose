@@ -56,7 +56,13 @@ function ddragonUrl(url: string, gameVersion?: string): string {
 }
 
 export function getChampionImage(championId: number, gameVersion?: string): string {
-    const identifier = getChampionInfo(championId).id;
+    let identifier: string;
+    try {
+        identifier = getChampionInfo(championId).id;
+    } catch {
+        console.warn(`Could not fetch image for champion ${championId} [${gameVersion}]`);
+        identifier = "";
+    }
     return ddragonUrl(`/img/champion/${identifier}.png`, gameVersion);
 }
 
