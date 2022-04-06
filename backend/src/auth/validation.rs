@@ -56,18 +56,13 @@ pub async fn validate_token(
     let kid = find_kid(token).unwrap();
     let jwk = jwks.find(&kid).unwrap();
 
-    let mut validation = Validation {
-        iss: Some(authority),
-        algorithms: vec![Algorithm::RS256],
-        ..Validation::default()
-    };
+    let mut validation = Validation::new(Algorithm::RS256);
+    validation.set_issuer(&[authority]);
     validation.set_audience(&[audience]);
 
-    match decode::<Claims>(
-        &token,
-        &DecodingKey::from_rsa_components(jwk.n.as_str(), jwk.e.as_str()),
-        &validation,
-    ) {
+    let decoding_key = &DecodingKey::from_rsa_components(jwk.n.as_str(), jwk.e.as_str()).unwrap();
+
+    match decode::<Claims>(&token, decoding_key, &validation) {
         Ok(token_data) => {
             update_token_cache(db_pool, tokens, token, token_data.claims.sub.as_str()).await;
             Ok(())
