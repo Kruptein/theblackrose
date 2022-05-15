@@ -66,10 +66,10 @@ export function initRouter(app: App): Router {
             component: () => import("./views/connections/AddConnections.vue"),
         },
         {
-            path: "/live/:summoner",
+            path: "/connection/:name/live",
             name: "LiveGame",
             beforeEnter: authGuard,
-            component: () => import("./views/live/Live.vue"),
+            component: () => import("./views/connections/Live.vue"),
         },
     ];
 

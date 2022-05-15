@@ -49,6 +49,9 @@ async function refresh(): Promise<void> {
             <div :class="{ active: active === 'records' }">
                 <router-link :to="'/connection/' + connection.name + '/records'">Records</router-link>
             </div>
+            <div :class="{ active: active === 'live' }">
+                <router-link :to="'/connection/' + connection.name + '/live'">Live</router-link>
+            </div>
             <!-- <div :class="{ active: active === 'stats' }">
                 <router-link :to="'/connection/' + connection.name + '/feed'">Stats</router-link>
             </div> -->
