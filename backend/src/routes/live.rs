@@ -5,7 +5,6 @@ use crate::{handlers::live as l, rito::summoners::get_summoner_by_name, AppState
 
 #[get("/live/{summoner_name}/")]
 pub async fn get_live_info(data: web::Data<AppState>, path: web::Path<String>) -> impl Responder {
-    println!("Live");
     let riot_api = &data.riot_api;
     let db_pool = &data.db_conn;
     let username = path.into_inner();
