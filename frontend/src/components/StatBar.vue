@@ -77,7 +77,7 @@ const heights = computed(() => {
 
 .summoner {
     position: absolute;
-    margin-top: 25px;
+    margin-top: 26px;
 
     &:hover {
         font-weight: bold;
