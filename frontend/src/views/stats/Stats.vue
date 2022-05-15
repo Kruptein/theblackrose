@@ -3,20 +3,38 @@ import { onMounted, ref } from "vue";
 
 import { getAuthHeader, backendUrl } from "../../api/utils";
 import { getChampionId, getChampionImage, getChampionNames } from "../../ddragon";
-import { decimalRound } from "../../utils";
+import StatBar, { WrData } from "../../components/StatBar.vue";
+import { computed } from "@vue/reactivity";
 
 const mingames = ref(0);
 
 type Winrate = Record<number, Record<string, Record<number, { wins: number; total: number }>>>;
 
-const winrates = ref<Winrate>({});
+const allWinrates = ref<Winrate>({});
 
 const names = getChampionNames();
 
 onMounted(async () => {
     const headers = await getAuthHeader();
     const response = await fetch(backendUrl(`/api/stats/winrates/`), headers);
-    winrates.value = await response.json();
+    allWinrates.value = await response.json();
+});
+
+const filteredWinrates = computed(() => {
+    if (Object.keys(allWinrates.value).length === 0) return {};
+
+    const wrData: Record<string, WrData> = {};
+    for (const [champion, chData] of Object.entries(allWinrates.value)) {
+        wrData[champion] = [];
+        for (const [summoner, data] of Object.entries(chData)) {
+            const summed = Object.entries(data).reduce(
+                (acc, curr) => ({ wins: acc.wins + curr[1].wins, total: acc.total + curr[1].total }),
+                { total: 0, wins: 0 },
+            );
+            if (summed.total >= mingames.value) wrData[champion].push([summoner, summed]);
+        }
+    }
+    return wrData;
 });
 </script>
 
@@ -26,25 +44,11 @@ onMounted(async () => {
 
         <h1>Winrates</h1>
         <div>Minimum games played filter:</div>
-        <input type="number" v-model="mingames" />
+        <input type="number" v-model="mingames" min="0" />
         <div style="margin-top: 50px"></div>
         <div v-for="champion in names" class="champion">
             <img :src="`${getChampionImage(getChampionId(champion))}`" />
-            <div class="data">
-                <div class="name">{{ champion }}</div>
-                <div class="line"></div>
-                <div
-                    v-for="(data, summoner) in winrates[getChampionId(champion)]"
-                    class="summoner"
-                    :style="{
-                        left: `${decimalRound((1000 * data[450].wins) / data[450].total)}px`,
-                        display: data[450].total < mingames ? 'none' : '',
-                    }"
-                    :title="`${summoner} [${data[450].wins}/${data[450].total}]`"
-                >
-                    {{ summoner[0] }}
-                </div>
-            </div>
+            <StatBar :title="champion" :data="filteredWinrates[getChampionId(champion)] ?? []" />
         </div>
     </div>
 </template>
@@ -53,7 +57,7 @@ onMounted(async () => {
 .champion {
     display: flex;
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 25px;
 
     img {
@@ -68,27 +72,6 @@ onMounted(async () => {
 
     &:last-child {
         padding-bottom: 100px;
-    }
-}
-
-.name {
-    position: absolute;
-    top: -15px;
-}
-
-.line {
-    height: 15px;
-    width: 1000px;
-    background: rgb(255, 0, 0);
-    background: linear-gradient(90deg, rgba(255, 0, 0, 1) 0%, rgba(0, 255, 0, 1) 100%);
-}
-
-.summoner {
-    position: absolute;
-
-    &:hover {
-        font-weight: bold;
-        z-index: 99;
     }
 }
 </style>
