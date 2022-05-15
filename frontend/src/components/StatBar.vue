@@ -44,20 +44,30 @@ const heights = computed(() => {
 </script>
 
 <template>
-    <div class="data" :style="{ height: `${50 + highestValue * 15}px` }">
+    <div class="data" :style="{ height: `${50 + 18 + highestValue * 15}px` }">
         <div class="name">{{ title }}</div>
         <div class="line"></div>
-        <div
-            v-for="[summoner, wr] in data"
-            class="summoner"
-            :style="{
-                left: `${decimalRound((1000 * wr.wins) / wr.total)}px`,
-                top: `${15 * heights[summoner]}px`,
-            }"
-            :title="`${summoner} [${wr.wins}/${wr.total}]`"
-        >
-            {{ summoner.slice(0, 2) }}
-        </div>
+        <template v-for="[summoner, wr] in data">
+            <div
+                class="summoner"
+                :style="{
+                    left: `${decimalRound((1000 * wr.wins) / wr.total) - 2}px`,
+                    top: 0,
+                }"
+            >
+                |
+            </div>
+            <div
+                class="summoner"
+                :style="{
+                    left: `${decimalRound((1000 * wr.wins) / wr.total) - 8}px`,
+                    top: `${18 + 15 * heights[summoner]}px`,
+                }"
+                :title="`${summoner} [${wr.wins}/${wr.total}]`"
+            >
+                {{ summoner.slice(0, 2) }}
+            </div>
+        </template>
     </div>
 </template>
 
