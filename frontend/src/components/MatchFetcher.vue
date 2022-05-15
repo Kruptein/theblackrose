@@ -66,3 +66,13 @@ const loadMoreData = async (): Promise<void> => {
     <MatchList :match-data="matches" :visible-names="connections" />
     <div id="more-data" @click="loadMoreData" v-if="showMore">Load more data</div>
 </template>
+
+<style lang="scss">
+#more-data {
+    margin-bottom: 50px;
+
+    &:hover {
+        cursor: pointer;
+    }
+}
+</style>
