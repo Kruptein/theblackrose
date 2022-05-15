@@ -25,6 +25,8 @@ const blueTeam = ref<LiveData[]>([]);
 const redTeam = ref<LiveData[]>([]);
 
 async function getLiveData(): Promise<void> {
+    blueTeam.value = [];
+    redTeam.value = [];
     error.value = "Loading data";
     const headers = await getAuthHeader();
     const response = await fetch(backendUrl(`/api/live/${summonerName}/`), headers);
@@ -33,8 +35,6 @@ async function getLiveData(): Promise<void> {
         parseLiveData(data);
         error.value = "";
     } else {
-        blueTeam.value = [];
-        redTeam.value = [];
         error.value = await response.text();
     }
 }
