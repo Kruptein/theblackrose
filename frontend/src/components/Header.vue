@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted, Ref } from "vue";
+import { useAuth0 } from "@auth0/auth0-vue";
+import { ref, onMounted, Ref, watchEffect } from "vue";
 
 import { backendUrl, getAuthHeader } from "../api/utils";
 import { Notification } from "../models/notifications";
-import { authClient, authState } from "../auth/core";
+
+const auth0 = useAuth0();
 
 const showNotifications = ref(false);
 const notifications: Ref<Notification[]> = ref([]);
 
 async function getNotifications(): Promise<void> {
-    if (authState.isAuthenticated) {
+    if (auth0.isAuthenticated.value) {
         const headers = await getAuthHeader();
         const response = await fetch(backendUrl("/api/notifications/"), headers);
         notifications.value = await response.json();
@@ -17,7 +19,7 @@ async function getNotifications(): Promise<void> {
 }
 
 async function removeNotification(sliceId: number): Promise<void> {
-    if (authState.isAuthenticated) {
+    if (auth0.isAuthenticated.value) {
         const notificationId = notifications.value[sliceId].id;
         const headers = await getAuthHeader();
         const response = await fetch(backendUrl(`/api/notifications/${notificationId}/`), {
@@ -32,7 +34,11 @@ async function removeNotification(sliceId: number): Promise<void> {
 
 onMounted(() => {
     setInterval(getNotifications, 15 * 60 * 1000);
-    getNotifications();
+});
+watchEffect(() => {
+    if (auth0.isAuthenticated.value) {
+        getNotifications();
+    }
 });
 </script>
 
@@ -40,9 +46,9 @@ onMounted(() => {
     <div id="toppanel">
         <nav>
             <ul>
-                <template v-if="!authState.loading">
-                    <template v-if="!authState.isAuthenticated">
-                        <li><a href="#" @click="authClient.loginWithRedirect()">Register / Login</a></li>
+                <template v-if="!auth0.isLoading.value">
+                    <template v-if="!auth0.isAuthenticated.value">
+                        <li><a href="#" @click="auth0.loginWithRedirect()">Register / Login</a></li>
                     </template>
                     <template v-else>
                         <li
@@ -55,7 +61,7 @@ onMounted(() => {
                         <li><router-link to="/stats">Stats</router-link></li>
                         <li><router-link to="/records">Records</router-link></li>
                         <li><router-link to="/connections">Network</router-link></li>
-                        <li @click="authClient.logout()" :class="{ showNotifications }">
+                        <li @click="auth0.logout()" :class="{ showNotifications }">
                             <a href="#">Logout</a>
                         </li>
                     </template>
