@@ -101,6 +101,7 @@ watchEffect(() => {
     border: solid 2px white;
     border-top: 0;
     padding: 0;
+    overflow: hidden;
 }
 
 nav {
@@ -131,20 +132,11 @@ nav {
             color: inherit;
         }
 
-        &:hover,
+        .router-link-active,
+        &:hover > a,
         &.hasNotifications {
             color: #d22537;
             background-color: white;
-        }
-
-        &:not(&.showNotifications) {
-            &:first-child {
-                border-bottom-left-radius: 20px;
-            }
-
-            &:last-child {
-                border-bottom-right-radius: 20px;
-            }
         }
     }
 }
