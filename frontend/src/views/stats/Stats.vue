@@ -12,7 +12,8 @@ type Winrate = Record<number, Record<string, Record<number, { wins: number; tota
 
 const allWinrates = ref<Winrate>({});
 
-const names = getChampionNames();
+const names = getChampionNames().sort((a, b) => a.localeCompare(b));
+console.log(names);
 
 onMounted(async () => {
     const headers = await getAuthHeader();
