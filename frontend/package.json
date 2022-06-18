@@ -8,31 +8,33 @@
         "clean": "rimraf ../server/static/vite/",
         "build": "vite build",
         "lint": "eslint src --fix",
-        "lint:ci": "eslint src --no-fix"
+        "lint:ci": "eslint src --no-fix",
+        "vue-tsc": "vue-tsc --noEmit",
+        "tsc": "tsc --noEmit"
     },
     "dependencies": {
         "@auth0/auth0-vue": "^1.0.1",
         "@fortawesome/fontawesome-svg-core": "^6.1.1",
         "@fortawesome/free-solid-svg-icons": "^6.1.1",
         "@fortawesome/vue-fontawesome": "^3.0.0-5",
-        "core-js": "^3.22.5",
-        "vue": "^3.2.33",
-        "vue-router": "^4.0.15"
+        "core-js": "^3.23.1",
+        "vue": "^3.2.37",
+        "vue-router": "^4.0.16"
     },
     "devDependencies": {
-        "@typescript-eslint/eslint-plugin": "^5.23.0",
-        "@typescript-eslint/parser": "^5.23.0",
+        "@typescript-eslint/eslint-plugin": "^5.28.0",
+        "@typescript-eslint/parser": "^5.28.0",
         "@vitejs/plugin-vue": "^2.3.3",
-        "eslint": "^8.15.0",
+        "eslint": "^8.18.0",
         "eslint-import-resolver-typescript": "^2.7.1",
         "eslint-plugin-import": "^2.26.0",
         "eslint-plugin-prettier": "^4.0.0",
-        "eslint-plugin-vue": "^8.7.1",
-        "prettier": "^2.6.2",
-        "sass": "^1.51.0",
-        "sass-loader": "^12.6.0",
-        "typescript": "~4.6.4",
-        "vite": "^2.9.9",
-        "vue-tsc": "^0.34.13"
+        "eslint-plugin-vue": "^9.1.1",
+        "prettier": "^2.7.1",
+        "sass": "^1.52.3",
+        "sass-loader": "^13.0.0",
+        "typescript": "~4.7.4",
+        "vite": "^2.9.12",
+        "vue-tsc": "^0.37.9"
     }
 }

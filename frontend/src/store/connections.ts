@@ -13,7 +13,7 @@ class ConnectionStore {
             if (!this.connectionInfo.has(connection.name)) {
                 this.connectionInfo.set(connection.name, connection);
             } else {
-                const state = this.connectionInfo.get(connection.name);
+                const state = this.connectionInfo.get(connection.name)!;
                 Object.assign(state, connection);
             }
         }

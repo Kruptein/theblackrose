@@ -22,11 +22,6 @@ onMounted(async () => {
         connectionStore.addConnections(data.core);
     }
 });
-
-async function refresh(): Promise<void> {
-    const headers = await getAuthHeader();
-    await fetch(backendUrl(`/api/connection/${route.params.name}/refresh`), headers);
-}
 </script>
 
 <template>
