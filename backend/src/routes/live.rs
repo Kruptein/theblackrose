@@ -9,7 +9,7 @@ pub async fn get_live_info(data: web::Data<AppState>, path: web::Path<String>) -
     let db_pool = &data.db_conn;
     let username = path.into_inner();
 
-    let summoner = get_summoner_by_name(&riot_api, &db_pool, &username).await;
+    let summoner = get_summoner_by_name(riot_api, db_pool, &username).await;
     if summoner.is_none() {
         return HttpResponse::NotFound().body("Summoner not found");
     }

@@ -52,13 +52,13 @@ impl Actor for GameFetchActor {
 
         // Check all connections
         let skip: bool = env::var("SKIP_START_LOOP")
-            .unwrap_or("false".to_owned())
+            .unwrap_or_else(|_| "false".to_owned())
             .parse()
             .unwrap_or(false);
         if !skip {
             update_closure(self, ctx);
         }
-        ctx.run_interval(Duration::from_secs(1 * 60 * 60), update_closure);
+        ctx.run_interval(Duration::from_secs(60 * 60), update_closure);
     }
 }
 
@@ -213,7 +213,7 @@ async fn update_matches_for_summoner(
                 let mut next_page_needed = false;
 
                 for game in games.iter() {
-                    let game_split = game.split("_").collect::<Vec<&str>>();
+                    let game_split = game.split('_').collect::<Vec<&str>>();
                     let platform_id = game_split.get(0).unwrap().to_owned();
                     let game_id: i64 = game_split.get(1).unwrap().parse().unwrap();
 
@@ -252,10 +252,10 @@ async fn update_matches_for_summoner(
                             }
                             drop(lock);
 
-                            if !has_game {
-                                if add_game_details(db, &details, &mut sliding_window).await {
-                                    games_added += 1;
-                                }
+                            if !has_game
+                                && add_game_details(db, &details, &mut sliding_window).await
+                            {
+                                games_added += 1;
                             }
                         }
                         Ok(None) => {
@@ -284,7 +284,7 @@ async fn update_matches_for_summoner(
         begin_index += 100;
     }
     if last_game_time.is_some() && begin_time.lt(&last_game_time.unwrap()) {
-        let summoner_id = summoner.id.clone();
+        let summoner_id = summoner.id;
 
         s_db::set_summoner_last_query_time(db, summoner_id, last_game_time.unwrap())
             .await

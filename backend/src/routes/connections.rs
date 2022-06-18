@@ -16,8 +16,8 @@ pub async fn get_connections(data: web::Data<AppState>, auth: BearerAuth) -> imp
 
     match get_user_from_cache(&data.tokens, auth.token()).await {
         Some(user) => {
-            let user = get_user_by_id(&db_pool, user).await.unwrap();
-            match db::get_connection_short_info(&db_pool, user).await {
+            let user = get_user_by_id(db_pool, user).await.unwrap();
+            match db::get_connection_short_info(db_pool, user).await {
                 Ok(connections) => HttpResponse::Ok().json(&connections),
                 Err(_) => HttpResponse::Ok().finish(),
             }

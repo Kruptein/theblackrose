@@ -9,7 +9,7 @@ use crate::{
 use super::summoners::get_or_add_partial_summoner;
 
 fn get_season_from_version(version: &str) -> i16 {
-    if let Some(patch) = version.split(".").next() {
+    if let Some(patch) = version.split('.').next() {
         patch.parse().unwrap_or(i16::MAX)
     } else {
         i16::MAX
@@ -56,7 +56,7 @@ async fn add_participant(
     queue_id: i16,
     season_id: i16,
 ) {
-    let summoner = get_or_add_partial_summoner(tx, &participant).await.unwrap();
+    let summoner = get_or_add_partial_summoner(tx, participant).await.unwrap();
 
     add_participant_stats(
         tx,

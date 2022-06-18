@@ -18,7 +18,7 @@ impl SlidingWindow {
         }
     }
 
-    pub fn push(&mut self, format: String) -> () {
+    pub fn push(&mut self, format: String) {
         let len = self.window.len();
         if len == 5 {
             self.window.pop_front();
@@ -29,18 +29,18 @@ impl SlidingWindow {
         self.print();
     }
 
-    pub fn replace(&mut self, format: String) -> () {
+    pub fn replace(&mut self, format: String) {
         self.window.pop_back();
         self.window.push_back(format);
         self.print();
     }
 
-    pub fn clear(&mut self) -> () {
+    pub fn clear(&mut self) {
         self.window.clear();
         self.last_len = 0;
     }
 
-    fn print(&mut self) -> () {
+    fn print(&mut self) {
         if self.last_len > 0 {
             print!("\x1B[{}A\x1B[J", self.last_len);
         }

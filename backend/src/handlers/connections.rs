@@ -15,7 +15,7 @@ pub async fn get_connection_matches(
     filter: MatchFilter,
 ) -> Result<Vec<MatchFeedElement>, Error> {
     let user_connections = match filter.get_names() {
-        Some(names) => names.to_owned(),
+        Some(names) => names,
         None => get_connection_names(conn, user.id).await?,
     };
     let after_time = match filter.get_after_time() {
@@ -31,7 +31,7 @@ pub async fn get_connection_matches(
     let references = get_match_ids(
         conn,
         user_connections,
-        filter.get_queues().unwrap_or(vec![450]),
+        filter.get_queues().unwrap_or_else(|| vec![450]),
         before_time,
         after_time,
         length,

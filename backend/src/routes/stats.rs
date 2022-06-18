@@ -10,7 +10,7 @@ pub async fn get_winrates(data: web::Data<AppState>, auth: BearerAuth) -> impl R
     match get_user_from_cache(&data.tokens, auth.token()).await {
         Some(user) => {
             let db_pool = &data.db_conn;
-            let connections = get_connections(&db_pool, user).await.unwrap();
+            let connections = get_connections(db_pool, user).await.unwrap();
             let winrates = data.winrate_map.read().await;
             let mut shit = HashMap::new();
             for (champion, data) in winrates.iter() {

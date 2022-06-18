@@ -8,7 +8,7 @@ pub async fn send_connection_notification(
     title: String,
     message: String,
 ) {
-    let users: Vec<i32> = query!(
+    for user_id in query!(
         "
         SELECT u.id
         FROM users u
@@ -21,8 +21,7 @@ pub async fn send_connection_notification(
     .unwrap()
     .into_iter()
     .map(|record| record.id)
-    .collect();
-    for user_id in users.into_iter() {
+    {
         query!(
             "INSERT INTO notifications (user_id, title, message) VALUES ($1, $2, $3)",
             user_id,

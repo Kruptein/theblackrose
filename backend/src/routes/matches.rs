@@ -21,7 +21,7 @@ impl MatchFilter {
     pub fn get_names(&self) -> Option<Vec<String>> {
         self.names
             .as_ref()
-            .map(|names| names.split(",").map(|name| name.to_owned()).collect())
+            .map(|names| names.split(',').map(|name| name.to_owned()).collect())
     }
 
     pub fn get_before_time(&self) -> Option<i64> {
@@ -40,7 +40,7 @@ impl MatchFilter {
         // todo: UPDATE DEFAULT ARRAY HERE
         self.queues.as_ref().map(|queues| {
             queues
-                .split(",")
+                .split(',')
                 .map(|queue| queue.parse::<i16>().unwrap())
                 .collect()
         })

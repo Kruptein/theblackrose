@@ -21,10 +21,7 @@ pub async fn validator(
     req: ServiceRequest,
     credentials: BearerAuth,
 ) -> Result<ServiceRequest, Error> {
-    let config = req
-        .app_data::<Config>()
-        .map(|data| data.clone())
-        .unwrap_or_else(|| Default::default());
+    let config = req.app_data::<Config>().cloned().unwrap_or_default();
 
     let state = req.app_data::<web::Data<AppState>>().unwrap();
     let tokens = &state.tokens;
@@ -62,7 +59,7 @@ pub async fn validate_token(
 
     let decoding_key = &DecodingKey::from_rsa_components(jwk.n.as_str(), jwk.e.as_str()).unwrap();
 
-    match decode::<Claims>(&token, decoding_key, &validation) {
+    match decode::<Claims>(token, decoding_key, &validation) {
         Ok(token_data) => {
             update_token_cache(db_pool, tokens, token, token_data.claims.sub.as_str()).await;
             Ok(())

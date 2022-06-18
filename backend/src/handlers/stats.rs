@@ -19,7 +19,7 @@ impl ChampionWinrate {
         self.total += 1;
     }
 
-    pub(crate) fn join(&mut self, v: ChampionWinrate) -> () {
+    pub(crate) fn join(&mut self, v: ChampionWinrate) {
         self.wins += v.wins;
         self.total += v.total;
     }
@@ -34,11 +34,13 @@ pub async fn get_all_winrates(
     let mut collection = HashMap::new();
 
     for row in data {
-        let champion_data = collection.entry(row.champion_id).or_insert(HashMap::new());
-        let summoner_data = champion_data.entry(row.name).or_insert(HashMap::new());
+        let champion_data = collection
+            .entry(row.champion_id)
+            .or_insert_with(HashMap::new);
+        let summoner_data = champion_data.entry(row.name).or_insert_with(HashMap::new);
         let queue_data = summoner_data
             .entry(row.queue_id)
-            .or_insert(ChampionWinrate::new());
+            .or_insert_with(ChampionWinrate::new);
         queue_data.add(row.win);
     }
 

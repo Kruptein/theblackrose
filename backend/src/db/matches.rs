@@ -435,7 +435,7 @@ query!("
         if summoner.last_match_query_time.is_some()
         {
             for record_type in RecordType::iter() {
-                let game_value = record_type.get_value(&stats, game_duration);
+                let game_value = record_type.get_value(stats, game_duration);
                 let record_int = record_type.clone() as i16;
                 let record = query_as!(RecordValue, "SELECT r.id, r.value FROM records r INNER JOIN matches m USING (game_id) WHERE r.record_type = $1 AND r.summoner_id = $2 AND m.queue_id = $3 AND m.season_id = $4",
                     record_int,

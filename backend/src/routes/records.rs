@@ -16,12 +16,12 @@ impl RecordFilter {
     pub fn get_names(&self) -> Option<Vec<String>> {
         self.names
             .as_ref()
-            .map(|names| names.split(",").map(|name| name.to_owned()).collect())
+            .map(|names| names.split(',').map(|name| name.to_owned()).collect())
     }
 
     pub fn get_queue_ids(&self) -> Vec<i16> {
         let ids = self.queues.as_ref().map(|q| {
-            q.split(",")
+            q.split(',')
                 .filter_map(|s| s.parse::<i16>().ok())
                 .collect::<Vec<i16>>()
         });
@@ -40,7 +40,7 @@ pub async fn get_records(
 
     match get_user_from_cache(&data.tokens, auth.token()).await {
         Some(user) => {
-            let user = get_user_by_id(&db_pool, user).await.unwrap();
+            let user = get_user_by_id(db_pool, user).await.unwrap();
             match get_connection_records(db_pool, user, query.0).await {
                 Ok(records) => HttpResponse::Ok().json(records),
                 Err(e) => {

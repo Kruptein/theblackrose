@@ -30,12 +30,12 @@ pub async fn get_summoner(
     let username = path.into_inner();
     let query = query.into_inner();
 
-    let summoner = get_summoner_by_name(&riot_api, &db_pool, &username).await;
+    let summoner = get_summoner_by_name(riot_api, db_pool, &username).await;
     match summoner {
         Some(summoner) => {
             let mut quick_stats: Option<QuickStats> = None;
             if query.stats.unwrap_or(false) {
-                quick_stats = get_summoner_quick_stats(&db_pool, &summoner).await.ok();
+                quick_stats = get_summoner_quick_stats(db_pool, &summoner).await.ok();
             }
             let info = SummonerInfo {
                 core: summoner,
