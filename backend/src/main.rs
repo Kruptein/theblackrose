@@ -47,7 +47,6 @@ pub struct AppState {
     riot_api: Arc<RiotApi>,
     tokens: RwLock<HashMap<String, i32>>,
     update_task: Addr<GameFetchActor>,
-    // stats_collector: Addr<StatsCollectorActor>,
     winrate_map: Arc<RwLock<HashMap<i16, HashMap<String, HashMap<i16, ChampionWinrate>>>>>,
 }
 
@@ -67,13 +66,6 @@ fn main() -> std::io::Result<()> {
 
         let riot_api = Arc::new(rito::create_riot_api());
 
-        let game_fetcher = GameFetchActor::create(|_| GameFetchActor {
-            db: pool.clone(),
-            riot_api: riot_api.clone(),
-            game_processing_lock: Arc::new(Mutex::new(HashSet::new())),
-        })
-        .clone();
-
         let winrate_map = Arc::new(RwLock::new(HashMap::new()));
 
         let stats_collector = StatsCollectorActor::create(|_| StatsCollectorActor {
@@ -82,12 +74,19 @@ fn main() -> std::io::Result<()> {
             winrate_map: winrate_map.clone(),
         });
 
+        let game_fetcher = GameFetchActor::create(|_| GameFetchActor {
+            db: pool.clone(),
+            riot_api: riot_api.clone(),
+            game_processing_lock: Arc::new(Mutex::new(HashSet::new())),
+            stats_collector,
+        })
+        .clone();
+
         let web_data = web::Data::new(AppState {
             riot_api: riot_api.clone(),
             db_conn: pool.clone(),
             tokens: RwLock::new(HashMap::new()),
             update_task: game_fetcher.clone(),
-            // stats_collector,
             winrate_map,
         });
 

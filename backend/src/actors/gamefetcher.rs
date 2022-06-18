@@ -7,6 +7,7 @@ use sqlx::{Error, PgPool};
 use tokio::sync::Mutex;
 
 use crate::{
+    actors::statscollector::UpdateStatsMessage,
     db::{
         connections::get_unique_connections,
         matches::{get_match, has_game},
@@ -18,6 +19,8 @@ use crate::{
     rito::summoners::update_summoner,
     utils::{millis_to_chrono, SlidingWindow},
 };
+
+use super::statscollector::StatsCollectorActor;
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -35,6 +38,7 @@ pub struct GameFetchActor {
     pub db: PgPool,
     pub riot_api: Arc<RiotApi>,
     pub game_processing_lock: Arc<Mutex<HashSet<i64>>>,
+    pub stats_collector: Addr<StatsCollectorActor>,
 }
 
 impl Actor for GameFetchActor {
@@ -68,7 +72,8 @@ fn update_closure(actor: &mut GameFetchActor, _: &mut Context<GameFetchActor>) {
     let db = actor.db.clone();
     let riot_api = actor.riot_api.clone();
     let game_processing_lock = actor.game_processing_lock.clone();
-    spawn(async { update_connections(db, riot_api, game_processing_lock).await });
+    let stats_collector = actor.stats_collector.clone();
+    spawn(async { update_connections(db, riot_api, game_processing_lock, stats_collector).await });
 }
 
 impl Handler<ConnectionUpdateMessage> for GameFetchActor {
@@ -78,7 +83,17 @@ impl Handler<ConnectionUpdateMessage> for GameFetchActor {
         let db = self.db.clone();
         let api = self.riot_api.clone();
         let game_processing_lock = self.game_processing_lock.clone();
-        spawn(async { update_connection(db, api, game_processing_lock, msg.connection).await });
+        let stats_collector = self.stats_collector.clone();
+        spawn(async {
+            update_connection(
+                db,
+                api,
+                game_processing_lock,
+                stats_collector,
+                msg.connection,
+            )
+            .await
+        });
     }
 }
 
@@ -89,8 +104,10 @@ impl Handler<SummonerUpdateMessage> for GameFetchActor {
         let db = self.db.clone();
         let api = self.riot_api.clone();
         let game_processing_lock = self.game_processing_lock.clone();
+        let stats_collector = self.stats_collector.clone();
         spawn(async {
-            update_summoner_with_lock(db, msg.summoner, api, game_processing_lock).await
+            update_summoner_with_lock(db, msg.summoner, api, game_processing_lock, stats_collector)
+                .await
         });
     }
 }
@@ -99,6 +116,7 @@ async fn update_connections(
     db: PgPool,
     api: Arc<RiotApi>,
     game_processing_lock: Arc<Mutex<HashSet<i64>>>,
+    stats_collector: Addr<StatsCollectorActor>,
 ) {
     match get_unique_connections(&db).await {
         Ok(connections) => {
@@ -107,6 +125,7 @@ async fn update_connections(
                     db.clone(),
                     api.clone(),
                     game_processing_lock.clone(),
+                    stats_collector.clone(),
                     connection,
                 )
                 .await;
@@ -120,6 +139,7 @@ async fn update_connection(
     db: PgPool,
     api: Arc<RiotApi>,
     game_processing_lock: Arc<Mutex<HashSet<i64>>>,
+    stats_collector: Addr<StatsCollectorActor>,
     connection: Connection,
 ) {
     let summoner = s_db::get_summoner(&db, connection.summoner_id)
@@ -128,7 +148,8 @@ async fn update_connection(
     match summoner.update_in_progress {
         true => (),
         false => {
-            update_summoner_with_lock(db, summoner, api, game_processing_lock).await;
+            update_summoner_with_lock(db, summoner, api, game_processing_lock, stats_collector)
+                .await;
         }
     }
 }
@@ -138,11 +159,12 @@ async fn update_summoner_with_lock(
     summoner: Summoner,
     api: Arc<RiotApi>,
     game_processing_lock: Arc<Mutex<HashSet<i64>>>,
+    stats_collector: Addr<StatsCollectorActor>,
 ) {
     let summoner_id = summoner.id;
     set_summoner_state(&db, summoner_id, true).await;
     update_summoner(&api, &db, &summoner).await.unwrap();
-    update_matches_for_summoner(&db, &api, &game_processing_lock, summoner).await;
+    update_matches_for_summoner(&db, &api, &game_processing_lock, stats_collector, summoner).await;
     set_summoner_state(&db, summoner_id, false).await;
 }
 
@@ -156,6 +178,7 @@ async fn update_matches_for_summoner(
     db: &PgPool,
     api: &RiotApi,
     game_processing_lock: &Arc<Mutex<HashSet<i64>>>,
+    stats_collector: Addr<StatsCollectorActor>,
     summoner: Summoner,
 ) {
     let begin_time = chrono::Utc.ymd(2000, 1, 1).and_hms(1, 1, 1).naive_utc();
@@ -266,6 +289,10 @@ async fn update_matches_for_summoner(
             .unwrap();
     }
     sliding_window.clear();
+    if games_added > 0 {
+        // todo: change to pass the connection user
+        stats_collector.send(UpdateStatsMessage {}).await.unwrap();
+    }
     println!(
         "Completed match update loop for {} [{} games added]",
         summoner.name, games_added

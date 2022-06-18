@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use actix::{spawn, Actor, Context};
+use actix::{spawn, Actor, Context, Handler, Message};
 use sqlx::PgPool;
 use tokio::sync::{Mutex, RwLock};
 
@@ -29,6 +29,18 @@ impl Actor for StatsCollectorActor {
     }
 }
 
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct UpdateStatsMessage {}
+
+impl Handler<UpdateStatsMessage> for StatsCollectorActor {
+    type Result = ();
+
+    fn handle(&mut self, _: UpdateStatsMessage, ctx: &mut Context<StatsCollectorActor>) {
+        update_closure(self, ctx);
+    }
+}
+
 fn update_closure(actor: &mut StatsCollectorActor, _: &mut Context<StatsCollectorActor>) {
     let db = actor.db.clone();
     let a = actor.modified_summoners.clone();
@@ -48,6 +60,7 @@ async fn update_connections(
     }
 
     let mut collection = winrates.write().await;
+    collection.clear();
 
     for summoner in summoners.into_iter() {
         let data = get_all_winrates(&db, summoner).await;
