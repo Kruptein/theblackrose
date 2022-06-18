@@ -1,13 +1,15 @@
 use riven::models::match_v5 as RM;
 use riven::models::summoner_v4 as RS;
 use sqlx::PgConnection;
+use sqlx::Postgres;
+use sqlx::Transaction;
 use sqlx::{query, query_as, Error, PgPool};
 
 use crate::models::summoners::Summoner;
 
-pub async fn get_summoner(conn: &PgPool, id: i32) -> Result<Summoner, Error> {
+pub async fn get_summoner(tx: &mut Transaction<'_, Postgres>, id: i32) -> Result<Summoner, Error> {
     query_as!(Summoner, "SELECT * FROM summoners WHERE id = $1", id)
-        .fetch_one(conn)
+        .fetch_one(tx)
         .await
 }
 

@@ -10,7 +10,7 @@ use crate::{models::{
         ParticipantKda, ParticipantProgress, ParticipantSpells,
     },
     summoners::Summoner, records::RecordType,
-}, db::notifications::send_connection_notification};
+}, db::{notifications::send_connection_notification, summoners as s_db}};
 
 pub async fn has_game(conn: &PgPool, platform_id: &str, game_id: i64) -> Result<bool, Error> {
     let count = query!(
@@ -429,87 +429,93 @@ query!("
     ).execute(&mut *tx).await.unwrap();
 
     if let Some(summoner_id) = summoner_id {
-        for record_type in RecordType::iter() {
-            let game_value = record_type.get_value(&stats, game_duration);
-            let record_int = record_type.clone() as i16;
-            let record = query_as!(RecordValue, "SELECT r.id, r.value FROM records r INNER JOIN matches m USING (game_id) WHERE r.record_type = $1 AND r.summoner_id = $2 AND m.queue_id = $3 AND m.season_id = $4",
-                record_int,
-                summoner_id,
-                queue_id,
-                season_id).fetch_optional(&mut *tx).await;
+        let summoner = s_db::get_summoner(&mut *tx, summoner_id)
+        .await
+        .unwrap();
+        if summoner.last_match_query_time.is_some()
+        {
+            for record_type in RecordType::iter() {
+                let game_value = record_type.get_value(&stats, game_duration);
+                let record_int = record_type.clone() as i16;
+                let record = query_as!(RecordValue, "SELECT r.id, r.value FROM records r INNER JOIN matches m USING (game_id) WHERE r.record_type = $1 AND r.summoner_id = $2 AND m.queue_id = $3 AND m.season_id = $4",
+                    record_int,
+                    summoner_id,
+                    queue_id,
+                    season_id).fetch_optional(&mut *tx).await;
 
-            match record {
-                Ok(Some(record_value)) => {
-                    if record_value.value < game_value {
-                        query!(
-                            "UPDATE records SET value = $1, game_id = $2 WHERE id = $3",
-                            game_value,
-                            game_id,
-                            record_value.id
-                        )
-                        .execute(&mut *tx)
-                        .await
-                        .unwrap();
-
-                        let is_all_time_record: Result<i64, _> = query!(r#"
-                            SELECT COUNT(*) as "count!"
-                            FROM records r
-                            INNER JOIN matches m USING (game_id)
-                            WHERE
-                                r.record_type = $1 AND
-                                r.summoner_id = $2 AND
-                                m.queue_id = $3 AND
-                                r.value > $4
-                            "#,
-                            record_int,
-                            summoner_id,
-                            queue_id,
-                            game_value
-                        ).fetch_one(&mut *tx).await.map(|record| record.count);
-
-                        let summoner_name: String =
-                            query!("SELECT name FROM summoners WHERE id = $1", summoner_id)
-                                .fetch_one(&mut *tx)
-                                .await
-                                .unwrap()
-                                .name;
-
-                        if is_all_time_record.unwrap_or(0) == 0 {
-                            send_connection_notification(
-                                tx,
-                                summoner_id,
-                                format!("New all time record for {}", summoner_name),
-                                format!(
-                                    "{} improved their \"{}\" record from {} to {}!",
-                                    summoner_name, record_type, record_value.value, game_value
-                                ),
+                match record {
+                    Ok(Some(record_value)) => {
+                        if record_value.value < game_value {
+                            query!(
+                                "UPDATE records SET value = $1, game_id = $2 WHERE id = $3",
+                                game_value,
+                                game_id,
+                                record_value.id
                             )
-                            .await;
-                        } else {
-                            send_connection_notification(
-                                tx,
+                            .execute(&mut *tx)
+                            .await
+                            .unwrap();
+
+                            let is_all_time_record: Result<i64, _> = query!(r#"
+                                SELECT COUNT(*) as "count!"
+                                FROM records r
+                                INNER JOIN matches m USING (game_id)
+                                WHERE
+                                    r.record_type = $1 AND
+                                    r.summoner_id = $2 AND
+                                    m.queue_id = $3 AND
+                                    r.value > $4
+                                "#,
+                                record_int,
                                 summoner_id,
-                                format!("New season record for {}", summoner_name),
-                                format!(
-                                    "{} improved their \"{}\" record from {} to {}!",
-                                    summoner_name, record_type, record_value.value, game_value
-                                ),
-                            )
-                            .await;
+                                queue_id,
+                                game_value
+                            ).fetch_one(&mut *tx).await.map(|record| record.count);
+
+                            let summoner_name: String =
+                                query!("SELECT name FROM summoners WHERE id = $1", summoner_id)
+                                    .fetch_one(&mut *tx)
+                                    .await
+                                    .unwrap()
+                                    .name;
+
+                            if is_all_time_record.unwrap_or(0) == 0 {
+                                send_connection_notification(
+                                    tx,
+                                    summoner_id,
+                                    format!("New all time record for {}", summoner_name),
+                                    format!(
+                                        "{} improved their \"{}\" record from {} to {}!",
+                                        summoner_name, record_type, record_value.value, game_value
+                                    ),
+                                )
+                                .await;
+                            } else {
+                                send_connection_notification(
+                                    tx,
+                                    summoner_id,
+                                    format!("New season record for {}", summoner_name),
+                                    format!(
+                                        "{} improved their \"{}\" record from {} to {}!",
+                                        summoner_name, record_type, record_value.value, game_value
+                                    ),
+                                )
+                                .await;
+                            }
                         }
                     }
-                }
-                Ok(None) => {
-                    query!("
-                        INSERT INTO records (game_id, summoner_id, record_type, value) VALUES ($1, $2, $3, $4)",
-                        game_id,
-                        summoner_id,
-                        record_int,
-                        game_value
-                    ).execute(&mut *tx).await.unwrap();
-                }
-                Err(_) => {}
-            };
+                    Ok(None) => {
+                        query!("
+                            INSERT INTO records (game_id, summoner_id, record_type, value) VALUES ($1, $2, $3, $4)",
+                            game_id,
+                            summoner_id,
+                            record_int,
+                            game_value
+                        ).execute(&mut *tx).await.unwrap();
+                    }
+                    Err(_) => {}
+                };
+            }
         }
     }
 }

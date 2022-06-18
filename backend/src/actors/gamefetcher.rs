@@ -142,9 +142,11 @@ async fn update_connection(
     stats_collector: Addr<StatsCollectorActor>,
     connection: Connection,
 ) {
-    let summoner = s_db::get_summoner(&db, connection.summoner_id)
+    let mut tx = db.begin().await.unwrap();
+    let summoner = s_db::get_summoner(&mut tx, connection.summoner_id)
         .await
         .unwrap();
+    tx.commit().await.unwrap();
     match summoner.update_in_progress {
         true => (),
         false => {
