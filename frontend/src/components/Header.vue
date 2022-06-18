@@ -91,6 +91,7 @@ watchEffect(() => {
 <style lang="scss" scoped>
 #toppanel {
     position: fixed;
+    z-index: 5;
     top: 0;
     right: 50px;
     display: flex;
