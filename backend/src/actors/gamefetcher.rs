@@ -58,7 +58,11 @@ impl Actor for GameFetchActor {
         if !skip {
             update_closure(self, ctx);
         }
-        ctx.run_interval(Duration::from_secs(60 * 60), update_closure);
+        let interval_time = env::var("UPDATE_INTERVAL")
+            .unwrap_or_default()
+            .parse()
+            .unwrap_or(60 * 60);
+        ctx.run_interval(Duration::from_secs(interval_time), update_closure);
     }
 }
 
